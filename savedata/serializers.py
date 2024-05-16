@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from .models import DepositOptions, DepositProducts
-from .models import InstallmentOption, InstallmentProduct
-from .models import AnnuityOption, AnnuityProduct
-from .models import creditLoanOption, creditLoanProduct
+from .models import InstallmentOptions, InstallmentProducts
+from .models import AnnuityOptions, AnnuityProducts
+from .models import creditLoanOptions, creditLoanProducts
 
 # 예금
 class DepositProductsSerializer(serializers.ModelSerializer):
@@ -19,36 +19,36 @@ class DepositOptionsSerializer(serializers.ModelSerializer):
 # 적금
 class InstallmentProductsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = InstallmentProduct
+        model = InstallmentProducts
         fields = '__all__'
 
 class InstallmentOptionsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = InstallmentOption
+        model = InstallmentOptions
         fields = '__all__'
         read_only_fields = ['product',]
 
 # 연금저축
 class AnnuityProductsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AnnuityProduct
+        model = AnnuityProducts
         fields = '__all__'
 
 class AnnuityOptionsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = AnnuityOption
+        model = AnnuityOptions
         fields = '__all__'
         read_only_fields = ['product',]
 
 
 # 개인 신용 대출
-class creditLoanProductSerializer(serializers.ModelSerializer):
+class creditLoanProductsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = creditLoanProduct
+        model = creditLoanProducts
         fields = '__all__'
 
-class creditLoanOptionSerializer(serializers.ModelSerializer):
+class creditLoanOptionsSerializer(serializers.ModelSerializer):
     class Meta:
-        model = creditLoanOption
+        model = creditLoanOptions
         fields = '__all__'
         read_only_fields = ['product',]
