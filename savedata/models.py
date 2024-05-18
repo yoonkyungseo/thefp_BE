@@ -4,6 +4,7 @@ from django.db import models
 class DepositProducts(models.Model):
     fin_prdt_cd = models.TextField(default=None)   # 금융상품코드
     kor_co_nm = models.TextField(default=None)     # 금융회사명
+    fin_co_no = models.TextField(default=None)     # 금융회사코드
     fin_prdt_nm = models.TextField(default=None)   # 금융상품명
     etc_note = models.TextField(blank=True, default="정보 없음")      # 금융상품설명
     join_deny = models.IntegerField(blank=True, default=4)  # 가입제한(1:제한없음, 2:서민전용, 3:일부제한, 4:정보없음)
@@ -14,6 +15,7 @@ class DepositProducts(models.Model):
 class DepositOptions(models.Model):
     product = models.ForeignKey(DepositProducts, on_delete=models.CASCADE, related_name='deposit_option') 
     fin_prdt_cd = models.TextField(default=None)                         # 금융상품코드
+    fin_co_no = models.TextField(default=None)     # 금융회사코드
     intr_rate_type_nm = models.CharField(max_length=100, default=None)   # 저축금리 유형명
     intr_rate = models.FloatField(default=None)                          # 저축금리
     intr_rate2 = models.FloatField(default=None)                         # 최고우대금리
@@ -24,6 +26,7 @@ class DepositOptions(models.Model):
 class InstallmentProducts(models.Model):
     fin_prdt_cd = models.TextField(default=None)   # 금융상품코드
     kor_co_nm = models.TextField(default=None)     # 금융회사명
+    fin_co_no = models.TextField(default=None)     # 금융회사코드
     fin_prdt_nm = models.TextField(default=None)   # 금융상품명
     etc_note = models.TextField(blank=True, default="기타 유의사항 없음")      # 기타 유의사항
     join_deny = models.IntegerField(blank=True, default=4)  # 가입제한(1:제한없음, 2:서민전용, 3:일부제한, 4:정보없음)
@@ -34,11 +37,12 @@ class InstallmentProducts(models.Model):
 class InstallmentOptions(models.Model):
     product = models.ForeignKey(InstallmentProducts, on_delete=models.CASCADE, related_name='installment_option') 
     fin_prdt_cd = models.TextField(default=None)                        # 금융상품코드
+    fin_co_no = models.TextField(default=None)     # 금융회사코드
     intr_rate_type_nm = models.CharField(max_length=100, default=None)   # 저축금리 유형명
     intr_rate = models.FloatField(default=None)               # 저축금리
     intr_rate2 = models.FloatField(default=None)                         # 최고우대금리
     save_trm = models.IntegerField(default=None)                         # 저축기간(단위:개월)
-    rsrv_type = models.TextField(default=None)                          # 적립유형명
+    rsrv_type_nm = models.TextField(default=None)                          # 적립유형명
     rsrv_type = models.TextField(default=None)                          # 적립유형
     
 
@@ -46,6 +50,7 @@ class InstallmentOptions(models.Model):
 class AnnuityProducts(models.Model):
     fin_prdt_cd = models.TextField(default=None)      # 금융상품코드
     kor_co_nm = models.TextField(default=None)        # 금융회사명
+    fin_co_no = models.TextField(default=None)     # 금융회사코드
     fin_prdt_nm = models.TextField(default=None)      # 금융상품명
     etc = models.TextField(blank=True, default="기타사항 없음")              # 기타사항
     join_way = models.TextField(blank=True, default="정보 없음")         # 가입방법
@@ -63,6 +68,7 @@ class AnnuityProducts(models.Model):
 class AnnuityOptions(models.Model):
     product = models.ForeignKey(AnnuityProducts, on_delete=models.CASCADE, related_name='annuity_option') 
     fin_prdt_cd = models.TextField(default=None)                        # 금융상품코드
+    fin_co_no = models.TextField(default=None)     # 금융회사코드
     pnsn_recp_trm = models.TextField(default=None)                      # 수령기간 (A: 10년확정, B: 20년확정,,,)
     pnsn_entr_age = models.IntegerField(default=None)                    # 가입가능 최소나이
     mon_paym_atm = models.IntegerField(default=None)                     # 월 납입 금액 (만원)
@@ -75,6 +81,7 @@ class AnnuityOptions(models.Model):
 class creditLoanProducts(models.Model):
     fin_prdt_cd = models.TextField(default=None)       # 금융상품코드
     kor_co_nm = models.TextField(default=None)         # 금융회사명
+    fin_co_no = models.TextField(default=None)     # 금융회사코드
     fin_prdt_nm = models.TextField(default=None)       # 금융상품명
     join_way = models.TextField(blank=True, default="정보 없음")          # 가입방법
     crdt_prdt_type = models.IntegerField(default=None)  # 대출 종류 코드
@@ -84,7 +91,9 @@ class creditLoanProducts(models.Model):
     dcls_end_day = models.DateField(blank=True)            # 공시 종료일
 
 class creditLoanOptions(models.Model):
-    product = models.ForeignKey(creditLoanProducts, on_delete=models.CASCADE, related_name='annuity_option') 
+    product = models.ForeignKey(creditLoanProducts, on_delete=models.CASCADE, related_name='creditLoan_option')
+    fin_prdt_cd = models.TextField(default=None)                        # 금융상품코드
+    fin_co_no = models.TextField(default=None)     # 금융회사코드
     crdt_lend_rate_type = models.TextField(default=None)         # 금리구분코드
     crdt_lend_rate_type_nm = models.TextField(default=None)      # 금리구분
     crdt_grad_1 = models.FloatField(default=0)                 # 900점 초과

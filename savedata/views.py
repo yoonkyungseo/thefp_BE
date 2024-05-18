@@ -8,10 +8,9 @@ from .serializers import DepositOptionsSerializer, DepositProductsSerializer
 from .serializers import  InstallmentOptionsSerializer, InstallmentProductsSerializer
 from .serializers import AnnuityOptionsSerializer, AnnuityProductsSerializer
 from .serializers import creditLoanOptionsSerializer, creditLoanProductsSerializer
-
 from .savemodel import save_DepositProducts, save_InstallmentProducts, save_AnnuityProduct, save_LoanProduct, save_LoanOptions
-
-from .models import DepositOptions, DepositProducts
+from .models import DepositProducts, InstallmentProducts, AnnuityProducts, creditLoanProducts 
+from django.core.exceptions import ObjectDoesNotExist
 
 API_KEY = settings.API_KEY
 max_page = 3
@@ -37,6 +36,7 @@ def save_deposit_products(request):
             for base_list in response.get('result').get('baseList'):
                 fin_prdt_cd = base_list.get('fin_prdt_cd')
                 kor_co_nm = base_list.get('kor_co_nm')
+                fin_co_no = base_list.get('fin_co_no')
                 fin_prdt_nm = base_list.get('fin_prdt_nm')
                 etc_note = base_list.get('etc_note')
                 join_deny = base_list.get('join_deny')
@@ -47,6 +47,7 @@ def save_deposit_products(request):
                 save_products = {
                     'fin_prdt_cd':fin_prdt_cd,
                     'kor_co_nm':kor_co_nm,
+                    'fin_co_no':fin_co_no,
                     'fin_prdt_nm':fin_prdt_nm,
                     'etc_note':etc_note,
                     'join_deny':join_deny,
@@ -58,13 +59,14 @@ def save_deposit_products(request):
                 serializer = DepositProductsSerializer(data=save_products)
                 try:
                     serializer.is_valid()
-                    product_ = serializer.save()
+                    serializer.save()
                     message.append("DepositProducts 성공")
                 except AssertionError:
                     pass
             # DepositOptions
             for option_list in response.get('result').get('optionList'):
                 fin_prdt_cd = option_list.get('fin_prdt_cd')
+                fin_co_no = option_list.get('fin_co_no')
                 intr_rate_type_nm = option_list.get('intr_rate_type_nm')
                 intr_rate = option_list.get('intr_rate')
                 intr_rate2 = option_list.get('intr_rate2')
@@ -72,20 +74,24 @@ def save_deposit_products(request):
 
                 save_options = {
                     'fin_prdt_cd':fin_prdt_cd,
+                    'fin_co_no':fin_co_no,
                     'intr_rate_type_nm':intr_rate_type_nm,
                     'intr_rate':intr_rate,
                     'intr_rate2':intr_rate2,
                     'save_trm':save_trm,
                 }
-                # products = get_object_or_404(DepositProducts, fin_prdt_cd=fin_prdt_cd)
                 serializer = DepositOptionsSerializer(data=save_options)
                 try:
+                    product_ = DepositProducts.objects.get(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no)
                     serializer.is_valid()
+                    # print(serializer.errors)
                     serializer.save(product=product_)
                     message.append("DepositOptions 성공")
                 except AssertionError:
                     pass
                 except UnboundLocalError:
+                    pass
+                except ObjectDoesNotExist:
                     pass
                     '''
                     data = {
@@ -117,6 +123,7 @@ def save_installment_products(request):
             for base_list in response.get('result').get('baseList'):
                 fin_prdt_cd = base_list.get('fin_prdt_cd')
                 kor_co_nm = base_list.get('kor_co_nm')
+                fin_co_no = base_list.get('fin_co_no')
                 fin_prdt_nm = base_list.get('fin_prdt_nm')
                 etc_note = base_list.get('etc_note')
                 join_deny = base_list.get('join_deny')
@@ -127,6 +134,7 @@ def save_installment_products(request):
                 save_products = {
                     'fin_prdt_cd':fin_prdt_cd,
                     'kor_co_nm':kor_co_nm,
+                    'fin_co_no':fin_co_no,
                     'fin_prdt_nm':fin_prdt_nm,
                     'etc_note':etc_note,
                     'join_deny':join_deny,
@@ -138,13 +146,14 @@ def save_installment_products(request):
                 serializer = InstallmentProductsSerializer(data=save_products)
                 try:
                     serializer.is_valid()
-                    product_ = serializer.save()
+                    serializer.save()
                     message.append("Installment Products 성공")
                 except AssertionError:
                     pass
             # Installment Options
             for option_list in response.get('result').get('optionList'):
                 fin_prdt_cd = option_list.get('fin_prdt_cd')
+                fin_co_no = option_list.get('fin_co_no')
                 intr_rate_type_nm = option_list.get('intr_rate_type_nm')
                 intr_rate = option_list.get('intr_rate')
                 intr_rate2 = option_list.get('intr_rate2')
@@ -154,6 +163,7 @@ def save_installment_products(request):
 
                 save_options = {
                     'fin_prdt_cd':fin_prdt_cd,
+                    'fin_co_no':fin_co_no,
                     'intr_rate_type_nm':intr_rate_type_nm,
                     'intr_rate':intr_rate,
                     'intr_rate2':intr_rate2,
@@ -163,12 +173,16 @@ def save_installment_products(request):
                 }
                 serializer = InstallmentOptionsSerializer(data=save_options)
                 try:
+                    product_ = InstallmentProducts.objects.get(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no)
                     serializer.is_valid()
+                    # print(serializer.errors)
                     serializer.save(product=product_)
                     message.append("Installment Options 성공")
                 except AssertionError:
                     pass
                 except UnboundLocalError:
+                    pass
+                except ObjectDoesNotExist:
                     pass
                 
     return Response(message, status=status.HTTP_201_CREATED)
@@ -194,6 +208,7 @@ def save_annuity_products(request):
             for base_list in response.get('result').get('baseList'):
                 fin_prdt_cd = base_list.get('fin_prdt_cd')
                 kor_co_nm = base_list.get('kor_co_nm')
+                fin_co_no = base_list.get('fin_co_no')
                 fin_prdt_nm = base_list.get('fin_prdt_nm')
                 etc = base_list.get('etc')
                 join_way = base_list.get('join_way')
@@ -211,6 +226,7 @@ def save_annuity_products(request):
                 save_products = {
                     'fin_prdt_cd':fin_prdt_cd,
                     'kor_co_nm':kor_co_nm,
+                    'fin_co_no':fin_co_no,
                     'fin_prdt_nm':fin_prdt_nm,
                     'etc':etc, 
                     'join_way':join_way,
@@ -227,17 +243,16 @@ def save_annuity_products(request):
                 }
                 save_AnnuityProduct(save_products)
                 serializer = AnnuityProductsSerializer(data=save_products)
-                print(save_products)
                 try:
                     serializer.is_valid()
-                    print(serializer.errors)
-                    product_ = serializer.save()
+                    serializer.save()
                     message.append("Annuity Products 성공")
                 except AssertionError:
                     pass
             # Installment Options
             for option_list in response.get('result').get('optionList'):
                 fin_prdt_cd = option_list.get('fin_prdt_cd')
+                fin_co_no = option_list.get('fin_co_no')
                 pnsn_recp_trm = option_list.get('pnsn_recp_trm')
                 pnsn_entr_age = option_list.get('pnsn_entr_age')
                 mon_paym_atm = option_list.get('mon_paym_atm')
@@ -250,6 +265,7 @@ def save_annuity_products(request):
 
                 save_options = {
                     'fin_prdt_cd':fin_prdt_cd,
+                    'fin_co_no':fin_co_no,
                     'pnsn_recp_trm':pnsn_recp_trm,
                     'pnsn_entr_age':pnsn_entr_age,
                     'mon_paym_atm':mon_paym_atm,
@@ -259,12 +275,16 @@ def save_annuity_products(request):
                 }
                 serializer = AnnuityOptionsSerializer(data=save_options)
                 try:
+                    product_ = AnnuityProducts.objects.get(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no)
                     serializer.is_valid()
+                    # print(serializer.errors)
                     serializer.save(product=product_)
                     message.append("Annuity Options 성공")
                 except AssertionError:
                     pass
                 except UnboundLocalError:
+                    pass
+                except ObjectDoesNotExist:
                     pass
     return Response(message, status=status.HTTP_201_CREATED)
 
@@ -290,6 +310,7 @@ def save_creditloan_products(request):
             for base_list in response.get('result').get('baseList'):
                 fin_prdt_cd = base_list.get('fin_prdt_cd')
                 kor_co_nm = base_list.get('kor_co_nm')
+                fin_co_no = base_list.get('fin_co_no')
                 fin_prdt_nm = base_list.get('fin_prdt_nm')
                 join_way = base_list.get('join_way')
                 crdt_prdt_type = base_list.get('crdt_prdt_type')
@@ -301,6 +322,7 @@ def save_creditloan_products(request):
                 save_products = {
                     'fin_prdt_cd':fin_prdt_cd,
                     'kor_co_nm':kor_co_nm,
+                    'fin_co_no':fin_co_no,
                     'fin_prdt_nm':fin_prdt_nm,
                     'join_way':join_way,
                     'crdt_prdt_type':crdt_prdt_type,
@@ -313,12 +335,14 @@ def save_creditloan_products(request):
                 serializer = creditLoanProductsSerializer(data=save_products)
                 try:
                     serializer.is_valid()
-                    product_ = serializer.save()
+                    serializer.save()
                     message.append("creditLoan Products 성공")
                 except AssertionError:
                     pass
             # creditLoan Options
             for option_list in response.get('result').get('optionList'):
+                fin_prdt_cd = option_list.get('fin_prdt_cd')
+                fin_co_no = option_list.get('fin_co_no')
                 crdt_lend_rate_type = option_list.get('crdt_lend_rate_type')
                 crdt_lend_rate_type_nm = option_list.get('crdt_lend_rate_type_nm')
                 crdt_grad_1 = option_list.get('crdt_grad_1')
@@ -333,6 +357,7 @@ def save_creditloan_products(request):
 
                 save_options = {
                     'fin_prdt_cd':fin_prdt_cd,
+                    'fin_co_no':fin_co_no,
                     'crdt_lend_rate_type':crdt_lend_rate_type,
                     'crdt_lend_rate_type_nm':crdt_lend_rate_type_nm,
                     'crdt_grad_1':crdt_grad_1,
@@ -348,11 +373,15 @@ def save_creditloan_products(request):
                 save_LoanOptions(save_options)
                 serializer = creditLoanOptionsSerializer(data=save_options)
                 try:
+                    product_ = creditLoanProducts.objects.get(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no)
                     serializer.is_valid()
+                    # print(serializer.errors)
                     serializer.save(product=product_)
                     message.append("creditLoan Options 성공")
                 except AssertionError:
                     pass
                 except UnboundLocalError:
+                    pass
+                except ObjectDoesNotExist:
                     pass
     return Response(message, status=status.HTTP_201_CREATED)
