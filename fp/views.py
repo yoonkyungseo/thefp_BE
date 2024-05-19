@@ -7,6 +7,9 @@ from savedata.models import InstallmentOptions, InstallmentProducts
 from savedata.models import AnnuityOptions, AnnuityProducts
 from savedata.models import creditLoanOptions, creditLoanProducts
 
+from django.db.models import Q
+from django.utils import timezone
+import pytz
 from rest_framework.decorators import api_view
 from django.conf import settings
 from django.http import JsonResponse
@@ -58,7 +61,6 @@ def deposit_products(request):
                 'save_trm':opt_serializer.data.get('save_trm')
             }
             display_list.append(display)
-            break
         data = {
             'highest_intr_rate2':highest_intr_rate2,
             'lowest_save_trm':lowest_save_trm,
@@ -111,7 +113,6 @@ def installment_products(request):
                 'save_trm':opt_serializer.data.get('save_trm')
             }
             display_list.append(display)
-            break
         data = {
             'highest_intr_rate2':highest_intr_rate2,
             'lowest_save_trm':lowest_save_trm,
@@ -122,9 +123,12 @@ def installment_products(request):
 # 연금 저축 조회
 @api_view(['GET'])
 def annuity_products(request):
+    utc_now = timezone.now()
+    kst = pytz.timezone('Asia/Seoul')
+    now = utc_now.astimezone(kst).date()
     if request.method == 'GET':
         # 상단 추천상품 1 - 공시이율이 가장 높은 상품
-        products = AnnuityProducts.objects.order_by('-dcls_rate')[0]
+        products = AnnuityProducts.objects.filter(Q(dcls_end_day__gt=now) | Q(dcls_end_day__isnull=True)).order_by('-dcls_rate')[0]
         pro_serializer = AnnuityProductsSerializer(products)
         options = products.annuity_option.order_by('paym_prd')[0]
         opt_serializer = AnnuityOptionsSerializer(options)
@@ -139,34 +143,40 @@ def annuity_products(request):
         }
         
         # 상단 추천상품 2 - 납입 기간이 가장 짧은 상품 (년)
-        options = AnnuityOptions.objects.order_by('paym_prd')[0]
-        opt_serializer = AnnuityOptionsSerializer(options)
-        product = options.product
-        pro_serializer = AnnuityProductsSerializer(product)
-        lowest_paym_prd = {
-            'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
-            'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'dcls_rate':pro_serializer.data.get('dcls_rate'),
-            'pnsn_entr_age':opt_serializer.data.get('pnsn_entr_age'),
-            'pnsn_strt_age':opt_serializer.data.get('pnsn_strt_age'),
-            'paym_prd':opt_serializer.data.get('paym_prd'),
-            'mon_paym_atm':opt_serializer.data.get('mon_paym_atm'),
-        }
+        for option in AnnuityOptions.objects.order_by('paym_prd'):
+            opt_serializer = AnnuityOptionsSerializer(option)
+            product = option.product
+            if product.dcls_end_day is None or product.dcls_end_day > now:
+                pro_serializer = AnnuityProductsSerializer(product)
+                lowest_paym_prd = {
+                    'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
+                    'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
+                    'dcls_rate':pro_serializer.data.get('dcls_rate'),
+                    'pnsn_entr_age':opt_serializer.data.get('pnsn_entr_age'),
+                    'pnsn_strt_age':opt_serializer.data.get('pnsn_strt_age'),
+                    'paym_prd':opt_serializer.data.get('paym_prd'),
+                    'mon_paym_atm':opt_serializer.data.get('mon_paym_atm'),
+                }
+                break
+            break
 
         # 상단 추천상품 3 - 월 납입 금액이 가장 적은 상품
-        options = AnnuityOptions.objects.order_by('mon_paym_atm')[0]
-        opt_serializer = AnnuityOptionsSerializer(options)
-        product = options.product
-        pro_serializer = AnnuityProductsSerializer(product)
-        lowest_mon_paym_atm = {
-            'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
-            'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'dcls_rate':pro_serializer.data.get('dcls_rate'),
-            'pnsn_entr_age':opt_serializer.data.get('pnsn_entr_age'),
-            'pnsn_strt_age':opt_serializer.data.get('pnsn_strt_age'),
-            'paym_prd':opt_serializer.data.get('paym_prd'),
-            'mon_paym_atm':opt_serializer.data.get('mon_paym_atm'),
-        }
+        for option in AnnuityOptions.objects.order_by('mon_paym_atm'):
+            opt_serializer = AnnuityOptionsSerializer(option)
+            product = option.product
+            if product.dcls_end_day is None or product.dcls_end_day > now:
+                pro_serializer = AnnuityProductsSerializer(product)
+                lowest_mon_paym_atm = {
+                    'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
+                    'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
+                    'dcls_rate':pro_serializer.data.get('dcls_rate'),
+                    'pnsn_entr_age':opt_serializer.data.get('pnsn_entr_age'),
+                    'pnsn_strt_age':opt_serializer.data.get('pnsn_strt_age'),
+                    'paym_prd':opt_serializer.data.get('paym_prd'),
+                    'mon_paym_atm':opt_serializer.data.get('mon_paym_atm'),
+                }
+                break
+            break
 
         # 전체 상품 조회
         display_list = []
@@ -174,6 +184,10 @@ def annuity_products(request):
             pro_serializer = AnnuityProductsSerializer(product)
             options = product.annuity_option.order_by('paym_prd')[0]
             opt_serializer = AnnuityOptionsSerializer(options)
+            if product.dcls_end_day is None or product.dcls_end_day > now:
+                end_day = True
+            else:
+                end_day = False
             display = {
                 'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
                 'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
@@ -182,9 +196,9 @@ def annuity_products(request):
                 'pnsn_strt_age':opt_serializer.data.get('pnsn_strt_age'),
                 'paym_prd':opt_serializer.data.get('paym_prd'),
                 'mon_paym_atm':opt_serializer.data.get('mon_paym_atm'),
+                'dcls_end_day': end_day,
             }
             display_list.append(display)
-            break
         data = {
             'highest_dcls_rate':highest_dcls_rate,
             'lowest_paym_prd':lowest_paym_prd,
@@ -197,33 +211,41 @@ def annuity_products(request):
 # 신용 대출 조회
 @api_view(['GET'])
 def creditLoan_products(request):
-    products = creditLoanProducts.objects.all()
+    utc_now = timezone.now()
+    kst = pytz.timezone('Asia/Seoul')
+    now = utc_now.astimezone(kst).date()
     if request.method == 'GET':
         # 상단 추천상품 1 - 대출금리가 가장 낮은 상품
-        options = creditLoanOptions.objects.filter(crdt_lend_rate_type='A').order_by('crdt_grad_avg')[0]
-        opt_serializer = creditLoanOptionsSerializer(options)
-        product = options.product
-        pro_serializer = creditLoanProductsSerializer(product)
-        lowest_crdt_grad_avg = {
-            'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
-            'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'crdt_prdt_type_nm':pro_serializer.data.get('crdt_prdt_type_nm'),
-            'crdt_lend_rate_type_nm':opt_serializer.data.get('crdt_lend_rate_type_nm'),
-            'crdt_grad_avg':opt_serializer.data.get('crdt_grad_avg'),
-        }
+        for option in creditLoanOptions.objects.filter(crdt_lend_rate_type='A').order_by('crdt_grad_avg'):
+            opt_serializer = creditLoanOptionsSerializer(option)
+            product = option.product
+            if product.dcls_end_day is None or product.dcls_end_day > now:
+                pro_serializer = creditLoanProductsSerializer(product)
+                lowest_crdt_grad_avg = {
+                    'kor_co_nm': pro_serializer.data.get('kor_co_nm'),
+                    'fin_prdt_nm': pro_serializer.data.get('fin_prdt_nm'),
+                    'crdt_prdt_type_nm': pro_serializer.data.get('crdt_prdt_type_nm'),
+                    'crdt_lend_rate_type_nm': opt_serializer.data.get('crdt_lend_rate_type_nm'),
+                    'crdt_grad_avg': opt_serializer.data.get('crdt_grad_avg'),
+                }
+                break
+            break
         
         # 상단 추천상품 2 - 가감조정금리가 가장 높은 상품
-        options = creditLoanOptions.objects.filter(crdt_lend_rate_type='D').order_by('-crdt_grad_avg')[0]
-        opt_serializer = creditLoanOptionsSerializer(options)
-        product = options.product
-        pro_serializer = creditLoanProductsSerializer(product)
-        highest_crdt_grad_avg = {
-            'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
-            'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'crdt_prdt_type_nm':pro_serializer.data.get('crdt_prdt_type_nm'),
-            'crdt_lend_rate_type_nm':opt_serializer.data.get('crdt_lend_rate_type_nm'),
-            'crdt_grad_avg':opt_serializer.data.get('crdt_grad_avg'),
-        }
+        for option in creditLoanOptions.objects.filter(crdt_lend_rate_type='D').order_by('-crdt_grad_avg'):
+            opt_serializer = creditLoanOptionsSerializer(option)
+            product = option.product
+            if product.dcls_end_day is None or product.dcls_end_day > now:
+                pro_serializer = creditLoanProductsSerializer(product)
+                highest_crdt_grad_avg = {
+                    'kor_co_nm': pro_serializer.data.get('kor_co_nm'),
+                    'fin_prdt_nm': pro_serializer.data.get('fin_prdt_nm'),
+                    'crdt_prdt_type_nm': pro_serializer.data.get('crdt_prdt_type_nm'),
+                    'crdt_lend_rate_type_nm': opt_serializer.data.get('crdt_lend_rate_type_nm'),
+                    'crdt_grad_avg': opt_serializer.data.get('crdt_grad_avg'),
+                }
+                break
+            break
 
         # 전체 상품 조회
         display_list = []
@@ -231,15 +253,20 @@ def creditLoan_products(request):
             pro_serializer = creditLoanProductsSerializer(product)
             options = product.creditLoan_option.filter(crdt_lend_rate_type='A').order_by('crdt_grad_avg')[0]
             opt_serializer = creditLoanOptionsSerializer(options)
+            if product.dcls_end_day is None or product.dcls_end_day > now:
+                end_day = True
+            else:
+                end_day = False
+
             display = {
                 'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
                 'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
                 'crdt_prdt_type_nm':pro_serializer.data.get('crdt_prdt_type_nm'),
                 'crdt_lend_rate_type_nm':opt_serializer.data.get('crdt_lend_rate_type_nm'),
                 'crdt_grad_avg':opt_serializer.data.get('crdt_grad_avg'),
+                'dcls_end_day':end_day,
             }
             display_list.append(display)
-            break
         data = {
             'lowest_crdt_grad_avg_A':lowest_crdt_grad_avg,
             'highest_crdt_grad_avg_D':highest_crdt_grad_avg,

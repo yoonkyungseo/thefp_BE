@@ -88,7 +88,7 @@ class creditLoanProducts(models.Model):
     crdt_prdt_type_nm = models.TextField(default=None) # 대출 종류명
     cb_name = models.TextField(blank=True, default="정보 없음")           # CB회사명 (신용조회회사)
     dcls_strt_day = models.DateField(blank=True)           # 공시 시작일
-    dcls_end_day = models.DateField(blank=True)            # 공시 종료일
+    dcls_end_day = models.DateField(blank=True, null=True)            # 공시 종료일
 
 class creditLoanOptions(models.Model):
     product = models.ForeignKey(creditLoanProducts, on_delete=models.CASCADE, related_name='creditLoan_option')
