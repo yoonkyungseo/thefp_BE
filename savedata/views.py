@@ -12,7 +12,7 @@ from .models import DepositProducts, AnnuityProducts, creditLoanProducts
 from django.core.exceptions import ObjectDoesNotExist
 
 API_KEY = settings.API_KEY
-max_page = 3
+max_page = 10
 
 # 예금
 @api_view(['GET'])
@@ -46,7 +46,8 @@ def save_deposit_products(request):
                     join_member = base_list.get('join_member')
                     join_way = base_list.get('join_way')
                     spcl_cnd = base_list.get('spcl_cnd')
-
+                    if DepositProducts.objects.filter(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no).exists():
+                        continue
                     save_products = {
                         'fin_prdt_cd':fin_prdt_cd,
                         'kor_co_nm':kor_co_nm,
@@ -145,7 +146,8 @@ def save_annuity_products(request):
                 sale_co = base_list.get('sale_co')
                 dcls_strt_day = base_list.get('dcls_strt_day')
                 dcls_end_day = base_list.get('dcls_end_day')
-                
+                if AnnuityProducts.objects.filter(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no).exists():
+                        continue
                 save_products = {
                     'fin_prdt_cd':fin_prdt_cd,
                     'kor_co_nm':kor_co_nm,
@@ -241,7 +243,8 @@ def save_creditloan_products(request):
                 cb_name = base_list.get('cb_name')
                 dcls_strt_day = base_list.get('dcls_strt_day')
                 dcls_end_day = base_list.get('dcls_end_day')
-
+                if creditLoanProducts.objects.filter(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no).exists():
+                        continue
                 save_products = {
                     'fin_prdt_cd':fin_prdt_cd,
                     'kor_co_nm':kor_co_nm,
