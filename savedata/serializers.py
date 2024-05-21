@@ -1,10 +1,9 @@
 from rest_framework import serializers
 from .models import DepositOptions, DepositProducts
-from .models import InstallmentOptions, InstallmentProducts
 from .models import AnnuityOptions, AnnuityProducts
 from .models import creditLoanOptions, creditLoanProducts
 
-# 예금
+# 예금, 적금
 class DepositProductsSerializer(serializers.ModelSerializer):
     class Meta:
         model = DepositProducts
@@ -16,17 +15,6 @@ class DepositOptionsSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['product',]
 
-# 적금
-class InstallmentProductsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = InstallmentProducts
-        fields = '__all__'
-
-class InstallmentOptionsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = InstallmentOptions
-        fields = '__all__'
-        read_only_fields = ['product',]
 
 # 연금저축
 class AnnuityProductsSerializer(serializers.ModelSerializer):

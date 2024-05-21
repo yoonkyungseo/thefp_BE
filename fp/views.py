@@ -1,11 +1,12 @@
 from savedata.serializers import DepositOptionsSerializer, DepositProductsSerializer
-from savedata.serializers import  InstallmentOptionsSerializer, InstallmentProductsSerializer
 from savedata.serializers import AnnuityOptionsSerializer, AnnuityProductsSerializer
 from savedata.serializers import creditLoanOptionsSerializer, creditLoanProductsSerializer
 from savedata.models import DepositOptions, DepositProducts
-from savedata.models import InstallmentOptions, InstallmentProducts
 from savedata.models import AnnuityOptions, AnnuityProducts
+from accounts.models import Deposit_Comment
+from accounts.serializers import DepositCommentSerializer
 from savedata.models import creditLoanOptions, creditLoanProducts
+from .bank_img import BANK_IMAGE_URL_DICT
 
 from django.db.models import Q
 from django.utils import timezone
@@ -17,35 +18,44 @@ from rest_framework.response import Response
 from rest_framework import status
 import requests
 
-# 예금 조회
+# 예금, 적금 조회
 @api_view(['GET'])
 def deposit_products(request):
     if request.method == 'GET':
+        recommend = []
         # 상단 추천상품 1 - 최고우대금리가 가장 높은 상품
         options = DepositOptions.objects.order_by('-intr_rate2')[0]
         opt_serializer = DepositOptionsSerializer(options)
         product = options.product
         pro_serializer = DepositProductsSerializer(product)
+        pro_type = pro_serializer.data.get('product_type')
+        intr_rate2 = opt_serializer.data.get('intr_rate2')
+        kor_co_nm = pro_serializer.data.get('kor_co_nm')
         highest_intr_rate2 = {
-            'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
+            'kor_co_nm':kor_co_nm,
             'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'intr_rate_type_nm':opt_serializer.data.get('intr_rate_type_nm'),
-            'intr_rate2':opt_serializer.data.get('intr_rate2'),
-            'save_trm':opt_serializer.data.get('save_trm')
+            'text': '최고우대금리가 가장 높은 상품',
+            'tags':[pro_type, intr_rate2+"%"],
+            'imgUrl': BANK_IMAGE_URL_DICT[kor_co_nm],
         }
+        recommend.append(highest_intr_rate2)
         
         # 상단 추천상품 2 - 저축기간이 가장 짧은 상품 (개월)
         options = DepositOptions.objects.order_by('save_trm')[0]
         opt_serializer = DepositOptionsSerializer(options)
         product = options.product
         pro_serializer = DepositProductsSerializer(product)
+        pro_type = pro_serializer.data.get('product_type')
+        save_trm = opt_serializer.data.get('save_trm')
+        kor_co_nm = pro_serializer.data.get('kor_co_nm')
         lowest_save_trm = {
-            'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
+            'kor_co_nm':kor_co_nm,
             'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'intr_rate_type_nm':opt_serializer.data.get('intr_rate_type_nm'),
-            'intr_rate2':opt_serializer.data.get('intr_rate2'),
-            'save_trm':opt_serializer.data.get('save_trm')
+            'text': '저축기간이 가장 짧은 상품',
+            'tags':[pro_type, save_trm+"개월"],
+            'imgUrl':BANK_IMAGE_URL_DICT[kor_co_nm],
         }
+        recommend.append(lowest_save_trm)
 
         # 전체 상품 조회
         display_list = []
@@ -53,69 +63,18 @@ def deposit_products(request):
             pro_serializer = DepositProductsSerializer(product)
             options = product.deposit_option.order_by('-intr_rate_type_nm','-intr_rate2')[0]
             opt_serializer = DepositOptionsSerializer(options)
+            kor_co_nm = pro_serializer.data.get('kor_co_nm')
             display = {
-                'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
+                'kor_co_nm':kor_co_nm,
                 'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-                'intr_rate_type_nm':opt_serializer.data.get('intr_rate_type_nm'),
                 'intr_rate2':opt_serializer.data.get('intr_rate2'),
-                'save_trm':opt_serializer.data.get('save_trm')
+                'save_trm':opt_serializer.data.get('save_trm'),
+                'product_type':pro_serializer.data.get('product_type'),
+                'imgUrl':BANK_IMAGE_URL_DICT[kor_co_nm],
             }
             display_list.append(display)
         data = {
-            'highest_intr_rate2':highest_intr_rate2,
-            'lowest_save_trm':lowest_save_trm,
-            'display':display_list
-        }
-        return Response(data)
-
-
-# 적금 조회
-@api_view(['GET'])
-def installment_products(request):
-    if request.method == 'GET':
-        # 상단 추천상품 1 - 최고우대금리가 가장 높은 상품
-        options = InstallmentOptions.objects.order_by('-intr_rate2')[0]
-        opt_serializer = InstallmentOptionsSerializer(options)
-        product = options.product
-        pro_serializer = InstallmentProductsSerializer(product)
-        highest_intr_rate2 = {
-            'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
-            'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'intr_rate_type_nm':opt_serializer.data.get('intr_rate_type_nm'),
-            'intr_rate2':opt_serializer.data.get('intr_rate2'),
-            'save_trm':opt_serializer.data.get('save_trm')
-        }
-        
-        # 상단 추천상품 2 - 저축기간이 가장 짧은 상품 (개월)
-        options = InstallmentOptions.objects.order_by('save_trm')[0]
-        opt_serializer = InstallmentOptionsSerializer(options)
-        product = options.product
-        pro_serializer = InstallmentProductsSerializer(product)
-        lowest_save_trm = {
-            'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
-            'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'intr_rate_type_nm':opt_serializer.data.get('intr_rate_type_nm'),
-            'intr_rate2':opt_serializer.data.get('intr_rate2'),
-            'save_trm':opt_serializer.data.get('save_trm')
-        }
-
-        # 전체 상품 조회
-        display_list = []
-        for product in InstallmentProducts.objects.all():
-            pro_serializer = InstallmentProductsSerializer(product)
-            options = product.installment_option.order_by('-intr_rate_type_nm','-intr_rate2')[0]
-            opt_serializer = InstallmentOptionsSerializer(options)
-            display = {
-                'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
-                'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-                'intr_rate_type_nm':opt_serializer.data.get('intr_rate_type_nm'),
-                'intr_rate2':opt_serializer.data.get('intr_rate2'),
-                'save_trm':opt_serializer.data.get('save_trm')
-            }
-            display_list.append(display)
-        data = {
-            'highest_intr_rate2':highest_intr_rate2,
-            'lowest_save_trm':lowest_save_trm,
+            'recommend':recommend,
             'display':display_list
         }
         return Response(data)
@@ -127,6 +86,7 @@ def annuity_products(request):
     kst = pytz.timezone('Asia/Seoul')
     now = utc_now.astimezone(kst).date()
     if request.method == 'GET':
+        recommend = []
         # 상단 추천상품 1 - 공시이율이 가장 높은 상품
         products = AnnuityProducts.objects.filter(Q(dcls_end_day__gt=now) | Q(dcls_end_day__isnull=True)).order_by('-dcls_rate')[0]
         pro_serializer = AnnuityProductsSerializer(products)
@@ -140,7 +100,11 @@ def annuity_products(request):
             'pnsn_strt_age':opt_serializer.data.get('pnsn_strt_age'),
             'paym_prd':opt_serializer.data.get('paym_prd'),
             'mon_paym_atm':opt_serializer.data.get('mon_paym_atm'),
+            'text': '공시이율이 가장 높은 상품',
+            'tags':[],
+            'imgUrl' :"",
         }
+        recommend.append(highest_dcls_rate)
         
         # 상단 추천상품 2 - 납입 기간이 가장 짧은 상품 (년)
         for option in AnnuityOptions.objects.order_by('paym_prd'):
@@ -156,10 +120,13 @@ def annuity_products(request):
                     'pnsn_strt_age':opt_serializer.data.get('pnsn_strt_age'),
                     'paym_prd':opt_serializer.data.get('paym_prd'),
                     'mon_paym_atm':opt_serializer.data.get('mon_paym_atm'),
+                    'text': '납입 기간이 가장 짧은 상품',
+                    'tags':[],
+                    'imgUrl' :"",
                 }
                 break
             break
-
+        recommend.append(lowest_paym_prd)
         # 상단 추천상품 3 - 월 납입 금액이 가장 적은 상품
         for option in AnnuityOptions.objects.order_by('mon_paym_atm'):
             opt_serializer = AnnuityOptionsSerializer(option)
@@ -174,10 +141,13 @@ def annuity_products(request):
                     'pnsn_strt_age':opt_serializer.data.get('pnsn_strt_age'),
                     'paym_prd':opt_serializer.data.get('paym_prd'),
                     'mon_paym_atm':opt_serializer.data.get('mon_paym_atm'),
+                    'text': '월 납입 금액이 가장 적은 상품',
+                    'tags':[],
+                    'imgUrl' :"",
                 }
                 break
             break
-
+        recommend.append(lowest_mon_paym_atm)
         # 전체 상품 조회
         display_list = []
         for product in AnnuityProducts.objects.order_by('-dcls_rate'):
@@ -200,9 +170,7 @@ def annuity_products(request):
             }
             display_list.append(display)
         data = {
-            'highest_dcls_rate':highest_dcls_rate,
-            'lowest_paym_prd':lowest_paym_prd,
-            'lowest_mon_paym_atm':lowest_mon_paym_atm,
+            'recommend':recommend,
             'display':display_list
         }
         return Response(data)
@@ -215,6 +183,7 @@ def creditLoan_products(request):
     kst = pytz.timezone('Asia/Seoul')
     now = utc_now.astimezone(kst).date()
     if request.method == 'GET':
+        recommend = []
         # 상단 추천상품 1 - 대출금리가 가장 낮은 상품
         for option in creditLoanOptions.objects.filter(crdt_lend_rate_type='A').order_by('crdt_grad_avg'):
             opt_serializer = creditLoanOptionsSerializer(option)
@@ -227,10 +196,13 @@ def creditLoan_products(request):
                     'crdt_prdt_type_nm': pro_serializer.data.get('crdt_prdt_type_nm'),
                     'crdt_lend_rate_type_nm': opt_serializer.data.get('crdt_lend_rate_type_nm'),
                     'crdt_grad_avg': opt_serializer.data.get('crdt_grad_avg'),
+                    'text': '대출금리가 가장 낮은 상품',
+                    'tags':[],
+                    'imgUrl' :"",
                 }
                 break
             break
-        
+        recommend.append(lowest_crdt_grad_avg)
         # 상단 추천상품 2 - 가감조정금리가 가장 높은 상품
         for option in creditLoanOptions.objects.filter(crdt_lend_rate_type='D').order_by('-crdt_grad_avg'):
             opt_serializer = creditLoanOptionsSerializer(option)
@@ -243,10 +215,13 @@ def creditLoan_products(request):
                     'crdt_prdt_type_nm': pro_serializer.data.get('crdt_prdt_type_nm'),
                     'crdt_lend_rate_type_nm': opt_serializer.data.get('crdt_lend_rate_type_nm'),
                     'crdt_grad_avg': opt_serializer.data.get('crdt_grad_avg'),
+                    'text': '가감조정금리가 가장 높은 상품',
+                    'tags':[],
+                    'imgUrl' :"",
                 }
                 break
             break
-
+        recommend.append(highest_crdt_grad_avg)
         # 전체 상품 조회
         display_list = []
         for product in creditLoanProducts.objects.all():
@@ -268,8 +243,7 @@ def creditLoan_products(request):
             }
             display_list.append(display)
         data = {
-            'lowest_crdt_grad_avg_A':lowest_crdt_grad_avg,
-            'highest_crdt_grad_avg_D':highest_crdt_grad_avg,
+            'recommend':recommend,
             'display':display_list
         }
         return Response(data)
@@ -278,22 +252,56 @@ def creditLoan_products(request):
 
 
 
-
+# 예금 적금 상품 상세조회
+@api_view(['GET'])
+def deposit_product_options(request, pk):
+    products = DepositProducts.objects.get(pk=pk)
+    options = products.deposit_option.all()
+    opt_serializer = DepositOptionsSerializer(options, many=True)
+    pro_serializer = DepositProductsSerializer(products)
+    comment = products.product_set.all()
+    com_serializer = DepositCommentSerializer(comment)
+    data={
+        'product':pro_serializer.data,
+        'options':opt_serializer.data,
+        'comment':com_serializer
+    }
+    return Response(data)
 
 
 
 
 @api_view(['GET'])
-def deposit_product_options(request, fin_prdt_cd):
-    products = DepositProducts.objects.get(fin_prdt_cd=fin_prdt_cd)
-    options = DepositOptions.objects.filter(fin_prdt_cd=fin_prdt_cd)
-    opt_serializer = DepositOptionsSerializer(options, many=True)
-    pro_serializer = DepositProductsSerializer(products)
+def annuity_product_options(request, pk):
+    products = AnnuityProducts.objects.get(pk=pk)
+    options = products.annuity_option.all()
+    opt_serializer = AnnuityOptionsSerializer(options, many=True)
+    pro_serializer = AnnuityProductsSerializer(products)
     data={
         'product':pro_serializer.data,
         'options':opt_serializer.data,
     }
     return Response(data)
+
+@api_view(['GET'])
+def creditLoan_product_options(request, pk):
+    products = creditLoanProducts.objects.get(pk=pk)
+    options = products.creditLoan_option.all()
+    opt_serializer = creditLoanOptionsSerializer(options, many=True)
+    pro_serializer = creditLoanProductsSerializer(products)
+    data={
+        'product':pro_serializer.data,
+        'options':opt_serializer.data,
+    }
+    return Response(data)
+
+
+
+
+
+
+
+
 
 @api_view(['GET'])
 def top_rate(request):

@@ -72,6 +72,16 @@ REST_FRAMEWORK = {
     ],
 }
 
+REST_AUTH = {
+    'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',
+}
+# ACCOUNT_ADAPTER = 'accounts.adapters.CustomAccountAdapter'
+
+# 회원가입 시 email 입력 필수
+# ACCOUNT_EMAIL_REQUIRED = True
+# 회원가입 시 username 입력 필수
+# ACCOUNT_USERNAME_REQUIRED = True
+# 회원가입 시 이메일 유효성 인증 여부
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 MIDDLEWARE = [

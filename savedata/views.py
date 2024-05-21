@@ -5,11 +5,10 @@ from rest_framework.response import Response
 from rest_framework import status
 import requests
 from .serializers import DepositOptionsSerializer, DepositProductsSerializer
-from .serializers import  InstallmentOptionsSerializer, InstallmentProductsSerializer
 from .serializers import AnnuityOptionsSerializer, AnnuityProductsSerializer
 from .serializers import creditLoanOptionsSerializer, creditLoanProductsSerializer
-from .savemodel import save_DepositProducts, save_InstallmentProducts, save_AnnuityProduct, save_LoanProduct, save_LoanOptions
-from .models import DepositProducts, InstallmentProducts, AnnuityProducts, creditLoanProducts 
+from .savemodel import save_DepositProducts, save_AnnuityProduct, save_LoanProduct, save_LoanOptions
+from .models import DepositProducts, AnnuityProducts, creditLoanProducts 
 from django.core.exceptions import ObjectDoesNotExist
 
 API_KEY = settings.API_KEY
@@ -18,7 +17,10 @@ max_page = 3
 # 예금
 @api_view(['GET'])
 def save_deposit_products(request):
-    BASE_URL = 'http://finlife.fss.or.kr/finlifeapi/depositProductsSearch.json'
+    depo_BASE_URL = 'http://finlife.fss.or.kr/finlifeapi/depositProductsSearch.json'
+    inst_BASE_URL = 'http://finlife.fss.or.kr/finlifeapi/savingProductsSearch.json'
+    for_BASE_URL = [depo_BASE_URL, inst_BASE_URL]
+    for_product_type = ["예금", "적금"]
     message = []
     params = {
         'auth': API_KEY,
@@ -27,165 +29,86 @@ def save_deposit_products(request):
     }
     
     finance = ['020000', '030200', '030300', '050000', '060000']
-    for fin in finance:
-        params['topFinGrpNo'] = fin
-        for num in range(1, max_page):
-            params['pageNo'] = num
-            response = requests.get(BASE_URL, params=params).json()
-            #DepositProducts
-            for base_list in response.get('result').get('baseList'):
-                fin_prdt_cd = base_list.get('fin_prdt_cd')
-                kor_co_nm = base_list.get('kor_co_nm')
-                fin_co_no = base_list.get('fin_co_no')
-                fin_prdt_nm = base_list.get('fin_prdt_nm')
-                etc_note = base_list.get('etc_note')
-                join_deny = base_list.get('join_deny')
-                join_member = base_list.get('join_member')
-                join_way = base_list.get('join_way')
-                spcl_cnd = base_list.get('spcl_cnd')
+    for product_type, BASE_URL in zip(for_product_type, for_BASE_URL):
+        for fin in finance:
+            params['topFinGrpNo'] = fin
+            for num in range(1, max_page):
+                params['pageNo'] = num
+                response = requests.get(BASE_URL, params=params).json()
+                #DepositProducts
+                for base_list in response.get('result').get('baseList'):
+                    fin_prdt_cd = base_list.get('fin_prdt_cd')
+                    kor_co_nm = base_list.get('kor_co_nm')
+                    fin_co_no = base_list.get('fin_co_no')
+                    fin_prdt_nm = base_list.get('fin_prdt_nm')
+                    etc_note = base_list.get('etc_note')
+                    join_deny = base_list.get('join_deny')
+                    join_member = base_list.get('join_member')
+                    join_way = base_list.get('join_way')
+                    spcl_cnd = base_list.get('spcl_cnd')
 
-                save_products = {
-                    'fin_prdt_cd':fin_prdt_cd,
-                    'kor_co_nm':kor_co_nm,
-                    'fin_co_no':fin_co_no,
-                    'fin_prdt_nm':fin_prdt_nm,
-                    'etc_note':etc_note,
-                    'join_deny':join_deny,
-                    'join_member':join_member,
-                    'join_way':join_way,
-                    'spcl_cnd':spcl_cnd,
-                }
-                save_DepositProducts(save_products)
-                serializer = DepositProductsSerializer(data=save_products)
-                try:
-                    serializer.is_valid()
-                    serializer.save()
-                    message.append("DepositProducts 성공")
-                except AssertionError:
-                    pass
-            # DepositOptions
-            for option_list in response.get('result').get('optionList'):
-                fin_prdt_cd = option_list.get('fin_prdt_cd')
-                fin_co_no = option_list.get('fin_co_no')
-                intr_rate_type_nm = option_list.get('intr_rate_type_nm')
-                intr_rate = option_list.get('intr_rate')
-                intr_rate2 = option_list.get('intr_rate2')
-                save_trm = option_list.get('save_trm')
-
-                save_options = {
-                    'fin_prdt_cd':fin_prdt_cd,
-                    'fin_co_no':fin_co_no,
-                    'intr_rate_type_nm':intr_rate_type_nm,
-                    'intr_rate':intr_rate,
-                    'intr_rate2':intr_rate2,
-                    'save_trm':save_trm,
-                }
-                serializer = DepositOptionsSerializer(data=save_options)
-                try:
-                    product_ = DepositProducts.objects.get(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no)
-                    serializer.is_valid()
-                    # print(serializer.errors)
-                    serializer.save(product=product_)
-                    message.append("DepositOptions 성공")
-                except AssertionError:
-                    pass
-                except UnboundLocalError:
-                    pass
-                except ObjectDoesNotExist:
-                    pass
-                    '''
-                    data = {
-                        "serializer_data":serializer.data,
-                        "message":message
+                    save_products = {
+                        'fin_prdt_cd':fin_prdt_cd,
+                        'kor_co_nm':kor_co_nm,
+                        'fin_co_no':fin_co_no,
+                        'fin_prdt_nm':fin_prdt_nm,
+                        'etc_note':etc_note,
+                        'join_deny':join_deny,
+                        'join_member':join_member,
+                        'join_way':join_way,
+                        'spcl_cnd':spcl_cnd,
+                        'product_type':product_type
                     }
-                    '''
+                    save_DepositProducts(save_products)
+                    serializer = DepositProductsSerializer(data=save_products)
+                    try:
+                        serializer.is_valid()
+                        serializer.save()
+                        message.append("DepositProducts 성공")
+                    except AssertionError:
+                        pass
+                # DepositOptions
+                for option_list in response.get('result').get('optionList'):
+                    fin_prdt_cd = option_list.get('fin_prdt_cd')
+                    fin_co_no = option_list.get('fin_co_no')
+                    intr_rate_type_nm = option_list.get('intr_rate_type_nm')
+                    intr_rate = option_list.get('intr_rate')
+                    intr_rate2 = option_list.get('intr_rate2')
+                    save_trm = option_list.get('save_trm')
+                    rsrv_type_nm = option_list.get('rsrv_type_nm', None)
+                    rsrv_type = option_list.get('rsrv_type', None)
+
+                    save_options = {
+                        'fin_prdt_cd':fin_prdt_cd,
+                        'fin_co_no':fin_co_no,
+                        'intr_rate_type_nm':intr_rate_type_nm,
+                        'intr_rate':intr_rate,
+                        'intr_rate2':intr_rate2,
+                        'save_trm':save_trm,
+                        'rsrv_type_nm':rsrv_type_nm,
+                        'rsrv_type':rsrv_type,
+                    }
+                    serializer = DepositOptionsSerializer(data=save_options)
+                    try:
+                        product_ = DepositProducts.objects.get(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no)
+                        serializer.is_valid()
+                        # print(serializer.errors)
+                        serializer.save(product=product_)
+                        message.append("DepositOptions 성공")
+                    except AssertionError:
+                        pass
+                    except UnboundLocalError:
+                        pass
+                    except ObjectDoesNotExist:
+                        pass
+                        '''
+                        data = {
+                            "serializer_data":serializer.data,
+                            "message":message
+                        }
+                        '''
     return Response(message, status=status.HTTP_201_CREATED)
 
-
-# 적금
-@api_view(['GET'])
-def save_installment_products(request):
-    BASE_URL = 'http://finlife.fss.or.kr/finlifeapi/savingProductsSearch.json'
-    message = []
-    params = {
-        'auth': API_KEY,
-        'topFinGrpNo': '020000', # 은행(020000), 여신전문(030200), 저축은행(030300), 보험(050000), 금융투자(060000)
-        'pageNo': 0
-    }
-    
-    finance = ['020000', '030200', '030300', '050000', '060000']
-    for fin in finance:
-        params['topFinGrpNo'] = fin
-        for num in range(1, max_page):
-            params['pageNo'] = num
-            response = requests.get(BASE_URL, params=params).json()
-            # Installment Products
-            for base_list in response.get('result').get('baseList'):
-                fin_prdt_cd = base_list.get('fin_prdt_cd')
-                kor_co_nm = base_list.get('kor_co_nm')
-                fin_co_no = base_list.get('fin_co_no')
-                fin_prdt_nm = base_list.get('fin_prdt_nm')
-                etc_note = base_list.get('etc_note')
-                join_deny = base_list.get('join_deny')
-                join_member = base_list.get('join_member')
-                join_way = base_list.get('join_way')
-                spcl_cnd = base_list.get('spcl_cnd')
-
-                save_products = {
-                    'fin_prdt_cd':fin_prdt_cd,
-                    'kor_co_nm':kor_co_nm,
-                    'fin_co_no':fin_co_no,
-                    'fin_prdt_nm':fin_prdt_nm,
-                    'etc_note':etc_note,
-                    'join_deny':join_deny,
-                    'join_member':join_member,
-                    'join_way':join_way,
-                    'spcl_cnd':spcl_cnd,
-                }
-                save_InstallmentProducts(save_products)
-                serializer = InstallmentProductsSerializer(data=save_products)
-                try:
-                    serializer.is_valid()
-                    serializer.save()
-                    message.append("Installment Products 성공")
-                except AssertionError:
-                    pass
-            # Installment Options
-            for option_list in response.get('result').get('optionList'):
-                fin_prdt_cd = option_list.get('fin_prdt_cd')
-                fin_co_no = option_list.get('fin_co_no')
-                intr_rate_type_nm = option_list.get('intr_rate_type_nm')
-                intr_rate = option_list.get('intr_rate')
-                intr_rate2 = option_list.get('intr_rate2')
-                save_trm = option_list.get('save_trm')
-                rsrv_type_nm = option_list.get('rsrv_type_nm')
-                rsrv_type = option_list.get('rsrv_type')
-
-                save_options = {
-                    'fin_prdt_cd':fin_prdt_cd,
-                    'fin_co_no':fin_co_no,
-                    'intr_rate_type_nm':intr_rate_type_nm,
-                    'intr_rate':intr_rate,
-                    'intr_rate2':intr_rate2,
-                    'save_trm':save_trm,
-                    'rsrv_type_nm':rsrv_type_nm,
-                    'rsrv_type':rsrv_type,
-                }
-                serializer = InstallmentOptionsSerializer(data=save_options)
-                try:
-                    product_ = InstallmentProducts.objects.get(fin_prdt_cd=fin_prdt_cd, fin_co_no=fin_co_no)
-                    serializer.is_valid()
-                    # print(serializer.errors)
-                    serializer.save(product=product_)
-                    message.append("Installment Options 성공")
-                except AssertionError:
-                    pass
-                except UnboundLocalError:
-                    pass
-                except ObjectDoesNotExist:
-                    pass
-                
-    return Response(message, status=status.HTTP_201_CREATED)
         
 # 연금저축
 @api_view(['GET'])

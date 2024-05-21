@@ -1,49 +1,29 @@
 from django.db import models
 
-# 예금 상품
+# 예금, 적금 상품
 class DepositProducts(models.Model):
-    fin_prdt_cd = models.TextField(default=None)   # 금융상품코드
-    kor_co_nm = models.TextField(default=None)     # 금융회사명
-    fin_co_no = models.TextField(default=None)     # 금융회사코드
-    fin_prdt_nm = models.TextField(default=None)   # 금융상품명
+    fin_prdt_cd = models.TextField(default=None)                     # 금융상품코드
+    kor_co_nm = models.TextField(default=None)                       # 금융회사명
+    fin_co_no = models.TextField(default=None)                       # 금융회사코드
+    fin_prdt_nm = models.TextField(default=None)                     # 금융상품명
     etc_note = models.TextField(blank=True, default="정보 없음")      # 금융상품설명
-    join_deny = models.IntegerField(blank=True, default=4)  # 가입제한(1:제한없음, 2:서민전용, 3:일부제한, 4:정보없음)
+    join_deny = models.IntegerField(blank=True, default=4)           # 가입제한(1:제한없음, 2:서민전용, 3:일부제한, 4:정보없음)
     join_member = models.TextField(blank=True, default="정보 없음")   # 가입대상
     join_way = models.TextField(blank=True, default="정보 없음")      # 가입방법
-    spcl_cnd = models.TextField(blank=True, default="우대조건 없음")      # 우대조건
+    spcl_cnd = models.TextField(blank=True, default="우대조건 없음")   # 우대조건
+    product_type = models.TextField()
 
 class DepositOptions(models.Model):
     product = models.ForeignKey(DepositProducts, on_delete=models.CASCADE, related_name='deposit_option') 
     fin_prdt_cd = models.TextField(default=None)                         # 금융상품코드
-    fin_co_no = models.TextField(default=None)     # 금융회사코드
+    fin_co_no = models.TextField(default=None)                           # 금융회사코드
     intr_rate_type_nm = models.CharField(max_length=100, default=None)   # 저축금리 유형명
     intr_rate = models.FloatField(default=None)                          # 저축금리
     intr_rate2 = models.FloatField(default=None)                         # 최고우대금리
     save_trm = models.IntegerField(default=None)                         # 저축기간(단위:개월)
+    rsrv_type_nm = models.TextField(default=None, null=True)             # 적립유형명
+    rsrv_type = models.TextField(default=None, null=True)                # 적립유형
 
-
-# 적금 상품
-class InstallmentProducts(models.Model):
-    fin_prdt_cd = models.TextField(default=None)   # 금융상품코드
-    kor_co_nm = models.TextField(default=None)     # 금융회사명
-    fin_co_no = models.TextField(default=None)     # 금융회사코드
-    fin_prdt_nm = models.TextField(default=None)   # 금융상품명
-    etc_note = models.TextField(blank=True, default="기타 유의사항 없음")      # 기타 유의사항
-    join_deny = models.IntegerField(blank=True, default=4)  # 가입제한(1:제한없음, 2:서민전용, 3:일부제한, 4:정보없음)
-    join_member = models.TextField(blank=True, default="정보 없음")   # 가입대상
-    join_way = models.TextField(blank=True, default="정보 없음")      # 가입방법
-    spcl_cnd = models.TextField(blank=True, default="우대조건 없음")      # 우대조건
-
-class InstallmentOptions(models.Model):
-    product = models.ForeignKey(InstallmentProducts, on_delete=models.CASCADE, related_name='installment_option') 
-    fin_prdt_cd = models.TextField(default=None)                        # 금융상품코드
-    fin_co_no = models.TextField(default=None)     # 금융회사코드
-    intr_rate_type_nm = models.CharField(max_length=100, default=None)   # 저축금리 유형명
-    intr_rate = models.FloatField(default=None)               # 저축금리
-    intr_rate2 = models.FloatField(default=None)                         # 최고우대금리
-    save_trm = models.IntegerField(default=None)                         # 저축기간(단위:개월)
-    rsrv_type_nm = models.TextField(default=None)                          # 적립유형명
-    rsrv_type = models.TextField(default=None)                          # 적립유형
     
 
 # 연금저축 상품
