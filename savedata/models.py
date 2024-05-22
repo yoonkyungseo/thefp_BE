@@ -1,5 +1,4 @@
 from django.db import models
-from accounts.models import User
 
 # 예금, 적금 상품
 class DepositProducts(models.Model):

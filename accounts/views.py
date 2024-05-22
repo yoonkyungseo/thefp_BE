@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes
+from rest_framework.authentication import TokenAuthentication
 from faker import Faker
 import random
 from savedata.models import DepositProducts, AnnuityProducts, creditLoanProducts
@@ -8,37 +9,55 @@ from savedata.serializers import DepositProductsSerializer, DepositOptionsSerial
 from .serializers import UserSerializer
 from django.http import JsonResponse
 from rest_framework.response import Response
+from rest_framework import status
 
 def delete_user(request):
     User.objects.all().delete()
     message='성공'
     return Response(message)
 
-@api_view(['GET','PUT', 'DELETE'])
-def profile(request, pk):
+@authentication_classes([TokenAuthentication])
+@api_view(['GET','PUT'])
+def profile(request):
     # 프로필 페이지 조회
-    user = User.objects.get(pk=pk)
+    user = User.objects.get(username=request.user.username)
     if request.method == 'GET':
         user_serializer = UserSerializer(user)
-        product = user.product
-        pro_serializer = DepositProductsSerializer(product)
-        option = product.deposit_option.all()
-        opt_serializer = DepositOptionsSerializer(option, many=True)
+        products = user.product
+        pro_serializer = DepositProductsSerializer(products, many=True)
         data = {
-            'nickname':user_serializer.data,
+            'user':user_serializer.data,
             'product':pro_serializer.data,
-            'option':opt_serializer.data
         }
         return Response(data)
     # nickname 수정
     elif request.method == 'PUT':
-        user_serializer = UserSerializer(user, data=request.data)
+        user_serializer = UserSerializer(user, data=request.data, partial=True)
         if user_serializer.is_valid(raise_exception=True):
             user_serializer.save()
             return Response(user_serializer.data)
-    # 예/적금 찜한 상품 삭제    
-    elif request.method == 'DELETE':
-        pass
+
+@api_view(['GET','PUT'])
+def reset_pw(request, email):
+    user = User.objects.get(email=email)
+    if request.method == 'GET':
+        user_serializer = UserSerializer(user)
+        return Response(user_serializer.data)
+    if request.method == 'PUT':
+        user_serializer = UserSerializer(user, data=request.data, partial=True)
+        if user_serializer.is_valid(raise_exception=True):
+            user_serializer.save()
+            return Response(user_serializer.data)
+
+@api_view(['DELETE'])
+def delete_product(request, product_pk):
+    # 예/적금 찜한 상품 삭제
+    user = User.objects.get(username=request.user.username)
+    product = user.product.get(pk=product_pk)
+    product.delete()
+    
+    Response({'message':f"{product_pk} 상품 삭제 완료"}, status=status.HTTP_204_NO_CONTENT)
+
 
 
 # fake user 생성
@@ -75,6 +94,19 @@ def fake_user(request):
             serializer.save()
             msg.append("성공")
     return Response(msg)
+
+# @api_view(['POST'])
+# def update_user_passwords(request):
+#     users = User.objects.all()
+#     fake_passwords = {}
+
+#     for user in users:
+#         new_password = "test_password"  # 모든 사용자에게 동일한 테스트 비밀번호를 설정
+#         user.set_password(new_password)
+#         user.save()
+#         fake_passwords[user.username] = new_password
+
+#     return Response(fake_passwords)
 
 # user 모델에 fake 가입 상품 생성
 @api_view(['GET'])

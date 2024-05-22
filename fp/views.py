@@ -7,12 +7,12 @@ from accounts.models import Deposit_Comment
 from accounts.serializers import DepositCommentSerializer
 from savedata.models import creditLoanOptions, creditLoanProducts
 from .bank_img import BANK_IMAGE_URL_DICT
+from rest_framework.authentication import TokenAuthentication
 
 from django.db.models import Q
 from django.utils import timezone
 import pytz
-from rest_framework.decorators import api_view
-from django.contrib.auth.decorators import login_required
+from rest_framework.decorators import api_view, authentication_classes
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -21,7 +21,6 @@ from rest_framework import status
 import requests
 
 # 예금, 적금 조회
-@login_required
 @api_view(['GET'])
 def deposit_products(request):
     if request.method == 'GET':
@@ -38,8 +37,8 @@ def deposit_products(request):
             'kor_co_nm':kor_co_nm,
             'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
             'text': '최고우대금리가 가장 높은 상품',
-            'tags':[pro_type, intr_rate2+"%"],
-            'imgUrl': BANK_IMAGE_URL_DICT[kor_co_nm],
+            'tags':[pro_type, str(intr_rate2)+"%"],
+            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, ""),
         }
         recommend.append(highest_intr_rate2)
         
@@ -55,8 +54,8 @@ def deposit_products(request):
             'kor_co_nm':kor_co_nm,
             'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
             'text': '저축기간이 가장 짧은 상품',
-            'tags':[pro_type, save_trm+"개월"],
-            'imgUrl':BANK_IMAGE_URL_DICT[kor_co_nm],
+            'tags':[pro_type, str(save_trm)+"개월"],
+            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, ""),
         }
         recommend.append(lowest_save_trm)
 
@@ -73,7 +72,7 @@ def deposit_products(request):
                 'intr_rate2':opt_serializer.data.get('intr_rate2'),
                 'save_trm':opt_serializer.data.get('save_trm'),
                 'product_type':pro_serializer.data.get('product_type'),
-                'imgUrl':BANK_IMAGE_URL_DICT[kor_co_nm],
+                'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, ""),
             }
             display_list.append(display)
         data = {
@@ -83,7 +82,7 @@ def deposit_products(request):
         return Response(data)
 
 # 연금 저축 조회
-@login_required
+@authentication_classes([TokenAuthentication])
 @api_view(['GET'])
 def annuity_products(request):
     utc_now = timezone.now()
@@ -181,7 +180,7 @@ def annuity_products(request):
 
 
 # 신용 대출 조회
-@login_required
+@authentication_classes([TokenAuthentication])
 @api_view(['GET'])
 def creditLoan_products(request):
     utc_now = timezone.now()
@@ -255,10 +254,8 @@ def creditLoan_products(request):
 
 
 
-
-
 # 예금 적금 상품 상세조회
-@login_required
+@authentication_classes([TokenAuthentication])
 @api_view(['GET','POST'])
 def deposit_product_options(request, pk):
     products = DepositProducts.objects.get(pk=pk)
@@ -267,11 +264,11 @@ def deposit_product_options(request, pk):
         opt_serializer = DepositOptionsSerializer(options, many=True)
         pro_serializer = DepositProductsSerializer(products)
         comment = products.product_set.all()
-        com_serializer = DepositCommentSerializer(comment)
+        com_serializer = DepositCommentSerializer(comment, many=True)
         data={
             'product':pro_serializer.data,
             'options':opt_serializer.data,
-            'comment':com_serializer
+            'comment':com_serializer.data
         }
         return Response(data)
     elif request.method == 'POST':
@@ -282,11 +279,11 @@ def deposit_product_options(request, pk):
 
 # 예금 적금 상품 찜하기
 @api_view(['POST'])
-@login_required
-def like_deposit(request, pk):
+@authentication_classes([TokenAuthentication])
+def like_deposit(request, product_pk):
     if request.user.is_authenticated:
-        product = get_object_or_404(DepositProducts, pk=pk)
-        if product.like_user.filter(pk=pk).exists():
+        product = get_object_or_404(DepositProducts, pk=product_pk)
+        if product.like_user.filter(pk=product_pk).exists():
             product.like_user.remove(request.user)
         else:
             product.like_user.add(request.user)
@@ -294,7 +291,7 @@ def like_deposit(request, pk):
 
 
 # 연금 저축 상세조회
-@login_required
+@authentication_classes([TokenAuthentication])
 @api_view(['GET'])
 def annuity_product_options(request, pk):
     if request.method == 'GET':
@@ -309,7 +306,7 @@ def annuity_product_options(request, pk):
         return Response(data)
 
 # 신용대출 상세조회
-@login_required
+@authentication_classes([TokenAuthentication])
 @api_view(['GET'])
 def creditLoan_product_options(request, pk):
     if request.method == 'GET':

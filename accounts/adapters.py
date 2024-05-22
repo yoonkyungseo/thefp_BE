@@ -7,5 +7,6 @@ class CustomUserAccountAdapter(DefaultAccountAdapter):
     def save_user(self, request, user, form, commit=True):
         user = super().save_user(request, user, form, False)
         user_field(user, 'birth', request.data.get('birth'))
+        user_field(user, 'nickname', request.data.get('nickname'))
         user.save()
         return user

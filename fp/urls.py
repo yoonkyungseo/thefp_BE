@@ -14,7 +14,7 @@ urlpatterns = [
     path('creditloan-product-options/<int:pk>/', views.creditLoan_product_options),
 
     # 상품 찜하기
-    path('deposit-like/<int:pk>/', views.like_deposit),
+    path('deposit-like/<int:product_pk>/', views.like_deposit),
 
 
 
