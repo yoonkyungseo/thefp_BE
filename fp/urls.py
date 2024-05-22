@@ -16,8 +16,7 @@ urlpatterns = [
     # 상품 찜하기
     path('deposit-like/<int:product_pk>/', views.like_deposit),
 
+    # 상품 추천
+    path('recommend_product/', views.recommend_product),
 
-
-    path('deposit-products/top_rate/', views.top_rate),
-    
 ]

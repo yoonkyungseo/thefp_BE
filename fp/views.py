@@ -4,7 +4,8 @@ from savedata.serializers import creditLoanOptionsSerializer, creditLoanProducts
 from savedata.models import DepositOptions, DepositProducts
 from savedata.models import AnnuityOptions, AnnuityProducts
 from accounts.models import Deposit_Comment
-from accounts.serializers import DepositCommentSerializer
+from accounts.models import User
+from accounts.serializers import DepositCommentSerializer, UserSerializer
 from savedata.models import creditLoanOptions, creditLoanProducts
 from .bank_img import BANK_IMAGE_URL_DICT
 from rest_framework.authentication import TokenAuthentication
@@ -20,7 +21,9 @@ from rest_framework.response import Response
 from rest_framework import status
 import requests
 
+##################### 상품 조회 #######################
 # 예금, 적금 조회
+@authentication_classes([TokenAuthentication])
 @api_view(['GET'])
 def deposit_products(request):
     if request.method == 'GET':
@@ -79,7 +82,7 @@ def deposit_products(request):
             'recommend':recommend,
             'display':display_list
         }
-        return Response(data)
+        return Response(data, status=status.HTTP_200_OK)
 
 # 연금 저축 조회
 @authentication_classes([TokenAuthentication])
@@ -253,11 +256,12 @@ def creditLoan_products(request):
         return Response(data)
 
 
-
+########################## 상세 조회 ##############################
 # 예금 적금 상품 상세조회
 @authentication_classes([TokenAuthentication])
 @api_view(['GET','POST'])
 def deposit_product_options(request, pk):
+    # 상품 상세조회
     products = DepositProducts.objects.get(pk=pk)
     if request.method == 'GET':
         options = products.deposit_option.all()
@@ -270,7 +274,8 @@ def deposit_product_options(request, pk):
             'options':opt_serializer.data,
             'comment':com_serializer.data
         }
-        return Response(data)
+        return Response(data, status=status.HTTP_200_OK)
+    # 상품 댓글 달기
     elif request.method == 'POST':
         serializer = DepositCommentSerializer(data = request.data)
         if serializer.is_valid(raise_exception=True):
@@ -321,42 +326,11 @@ def creditLoan_product_options(request, pk):
         return Response(data)
 
 
-
-
-
-
-
-
-
-@api_view(['GET'])
-def top_rate(request):
-    options = DepositOptions.objects.order_by('-intr_rate2')[0]
-    products = options.product
-    product_serializer = DepositProductsSerializer(products)
-    option_serializer = DepositOptionsSerializer(options)
-    data ={
-        'product_serializer':product_serializer.data,
-        'option_serializer':option_serializer.data,
-    }
-    return Response(data)
-
-
-@api_view(['GET','POST'])
-def nn(request):
-    products = DepositProducts.objects.all()
-    if request.method == 'GET':
-        for product in DepositProducts.objects.all():
-            pro_serializer = DepositProductsSerializer(product)
-            options = product.deposit_option.order_by('-intr_rate_type_nm','-intr_rate2')[0]
-            opt_serializer = DepositOptionsSerializer(options)
-            data = {
-                'product':pro_serializer.data,
-                'option':opt_serializer.data
-            }
-            break
-        return Response(data)
-    elif request.method == 'POST':
-        serializer = DepositProductsSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(serializer.data)
+######################### 추천 상품 ################################
+@authentication_classes([TokenAuthentication])
+@api_view(['POST'])
+def recommend_product(request):
+    user = User.objects.get(user = request.data.user)
+    user_serializer = UserSerializer(user, data=request.data, partial=True)
+    if user_serializer.is_valid(raise_exception=True):
+            user_serializer.save()

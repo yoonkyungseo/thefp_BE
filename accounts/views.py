@@ -23,31 +23,40 @@ def profile(request):
     user = User.objects.get(username=request.user.username)
     if request.method == 'GET':
         user_serializer = UserSerializer(user)
+        user_info = user_serializer.data
         products = user.product
         pro_serializer = DepositProductsSerializer(products, many=True)
         data = {
-            'user':user_serializer.data,
+            'user': {
+                'id':user_info.get('id'),
+                'nickname':user_info.get('nickname'),
+                'birth':user_info.get('birth'),
+                'email':user_info.get('email')
+            },
             'product':pro_serializer.data,
         }
-        return Response(data)
+        return Response(data, status=status.HTTP_200_OK)
     # nickname 수정
     elif request.method == 'PUT':
         user_serializer = UserSerializer(user, data=request.data, partial=True)
         if user_serializer.is_valid(raise_exception=True):
             user_serializer.save()
-            return Response(user_serializer.data)
+            return Response(user_serializer.data, status=status.HTTP_205_RESET_CONTENT)
 
+# 비밀번호 찾기
 @api_view(['GET','PUT'])
 def reset_pw(request, email):
+    # 이메일로 유저찾기
     user = User.objects.get(email=email)
     if request.method == 'GET':
         user_serializer = UserSerializer(user)
-        return Response(user_serializer.data)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+    # 비밀번호 변경
     if request.method == 'PUT':
         user_serializer = UserSerializer(user, data=request.data, partial=True)
         if user_serializer.is_valid(raise_exception=True):
             user_serializer.save()
-            return Response(user_serializer.data)
+            return Response({'message':"비밀번호 변경 완료"}, status=status.HTTP_200_OK)
 
 @api_view(['DELETE'])
 def delete_product(request, product_pk):
@@ -67,7 +76,6 @@ def fake_user(request):
     fake = Faker('ko-KR')
     for _ in range(1000):
         nickname = fake.name()
-        password = fake.password(length=8, special_chars=True, upper_case=False, lower_case=True)
         email = fake.email()
         while User.objects.filter(username=email.split('@')[0]).exists():
             email = fake.email()
@@ -79,7 +87,7 @@ def fake_user(request):
         creditcard = fake.pyint(min_value=0, max_value=5)
         save_user = {
             'username':email.split('@')[0],
-            'password':password,
+            'password':"test_password",
             'nickname':nickname,
             'email':email,
             'birth':birth,
@@ -93,20 +101,7 @@ def fake_user(request):
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             msg.append("성공")
-    return Response(msg)
-
-# @api_view(['POST'])
-# def update_user_passwords(request):
-#     users = User.objects.all()
-#     fake_passwords = {}
-
-#     for user in users:
-#         new_password = "test_password"  # 모든 사용자에게 동일한 테스트 비밀번호를 설정
-#         user.set_password(new_password)
-#         user.save()
-#         fake_passwords[user.username] = new_password
-
-#     return Response(fake_passwords)
+    return Response(msg, status=status.HTTP_201_CREATED)
 
 # user 모델에 fake 가입 상품 생성
 @api_view(['GET'])
@@ -131,4 +126,4 @@ def fake_products(request):
             user.creditloan.add(*selected_creditloans)
         
         user.save()
-    return Response({"message": "Products, annuities, and creditloans added successfully to all users."})
+    return Response({"message": "Products, annuities, and creditloans added successfully to all users."}, status=status.HTTP_201_CREATED)

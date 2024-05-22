@@ -22,6 +22,7 @@ urlpatterns = [
     path('savedata/', include('savedata.urls')),
     path('fp/', include('fp.urls')),
     path('ac/', include('accounts.urls')),
+    path('exchange/', include('exchange.urls')),
     path('accounts/', include('dj_rest_auth.urls')),
     path('accounts/signup/', include('dj_rest_auth.registration.urls')),
 ]
