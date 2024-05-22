@@ -4,6 +4,7 @@ from faker import Faker
 import random
 from savedata.models import DepositProducts, AnnuityProducts, creditLoanProducts
 from .models import User
+from savedata.serializers import DepositProductsSerializer, DepositOptionsSerializer
 from .serializers import UserSerializer
 from django.http import JsonResponse
 from rest_framework.response import Response
@@ -13,7 +14,34 @@ def delete_user(request):
     message='성공'
     return Response(message)
 
-# Create your views here.
+@api_view(['GET','PUT', 'DELETE'])
+def profile(request, pk):
+    # 프로필 페이지 조회
+    user = User.objects.get(pk=pk)
+    if request.method == 'GET':
+        user_serializer = UserSerializer(user)
+        product = user.product
+        pro_serializer = DepositProductsSerializer(product)
+        option = product.deposit_option.all()
+        opt_serializer = DepositOptionsSerializer(option, many=True)
+        data = {
+            'nickname':user_serializer.data,
+            'product':pro_serializer.data,
+            'option':opt_serializer.data
+        }
+        return Response(data)
+    # nickname 수정
+    elif request.method == 'PUT':
+        user_serializer = UserSerializer(user, data=request.data)
+        if user_serializer.is_valid(raise_exception=True):
+            user_serializer.save()
+            return Response(user_serializer.data)
+    # 예/적금 찜한 상품 삭제    
+    elif request.method == 'DELETE':
+        pass
+
+
+# fake user 생성
 @api_view(['GET'])
 def fake_user(request):
     msg = []
@@ -48,6 +76,7 @@ def fake_user(request):
             msg.append("성공")
     return Response(msg)
 
+# user 모델에 fake 가입 상품 생성
 @api_view(['GET'])
 def fake_products(request):
     products = DepositProducts.objects.all()

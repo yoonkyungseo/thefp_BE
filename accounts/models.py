@@ -19,9 +19,9 @@ class User(AbstractUser):
     salary = models.IntegerField(blank=True, null=True)              # 연봉 (만원)
     m_consumption = models.IntegerField(blank=True, null=True)       # 평균 월 소비 (만원)
     creditcard = models.IntegerField(blank=True, null=True)          # 사용 신용카드 갯수
-    product = models.ManyToManyField(DepositProducts)   # 가입한 예금 상품
-    annuity = models.ManyToManyField(AnnuityProducts)   # 가입한 연금저축 상품
-    creditloan = models.ManyToManyField(creditLoanProducts)   # 가입한 신용대출 상품
+    product = models.ManyToManyField(DepositProducts, related_name='like_user')   # 찜한 예금 상품
+    annuity = models.ManyToManyField(AnnuityProducts, related_name='like_user')   # 찜한 연금저축 상품
+    creditloan = models.ManyToManyField(creditLoanProducts, related_name='like_user')   # 찜한 신용대출 상품
 
 
 class Deposit_Comment(models.Model):

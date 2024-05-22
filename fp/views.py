@@ -12,13 +12,16 @@ from django.db.models import Q
 from django.utils import timezone
 import pytz
 from rest_framework.decorators import api_view
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status
 import requests
 
 # 예금, 적금 조회
+@login_required
 @api_view(['GET'])
 def deposit_products(request):
     if request.method == 'GET':
@@ -80,6 +83,7 @@ def deposit_products(request):
         return Response(data)
 
 # 연금 저축 조회
+@login_required
 @api_view(['GET'])
 def annuity_products(request):
     utc_now = timezone.now()
@@ -177,6 +181,7 @@ def annuity_products(request):
 
 
 # 신용 대출 조회
+@login_required
 @api_view(['GET'])
 def creditLoan_products(request):
     utc_now = timezone.now()
@@ -253,47 +258,70 @@ def creditLoan_products(request):
 
 
 # 예금 적금 상품 상세조회
-@api_view(['GET'])
+@login_required
+@api_view(['GET','POST'])
 def deposit_product_options(request, pk):
     products = DepositProducts.objects.get(pk=pk)
-    options = products.deposit_option.all()
-    opt_serializer = DepositOptionsSerializer(options, many=True)
-    pro_serializer = DepositProductsSerializer(products)
-    comment = products.product_set.all()
-    com_serializer = DepositCommentSerializer(comment)
-    data={
-        'product':pro_serializer.data,
-        'options':opt_serializer.data,
-        'comment':com_serializer
-    }
-    return Response(data)
+    if request.method == 'GET':
+        options = products.deposit_option.all()
+        opt_serializer = DepositOptionsSerializer(options, many=True)
+        pro_serializer = DepositProductsSerializer(products)
+        comment = products.product_set.all()
+        com_serializer = DepositCommentSerializer(comment)
+        data={
+            'product':pro_serializer.data,
+            'options':opt_serializer.data,
+            'comment':com_serializer
+        }
+        return Response(data)
+    elif request.method == 'POST':
+        serializer = DepositCommentSerializer(data = request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save(user = request.user, product = products)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+# 예금 적금 상품 찜하기
+@api_view(['POST'])
+@login_required
+def like_deposit(request, pk):
+    if request.user.is_authenticated:
+        product = get_object_or_404(DepositProducts, pk=pk)
+        if product.like_user.filter(pk=pk).exists():
+            product.like_user.remove(request.user)
+        else:
+            product.like_user.add(request.user)
+        return Response(status.HTTP_200_OK)
 
 
-
-
+# 연금 저축 상세조회
+@login_required
 @api_view(['GET'])
 def annuity_product_options(request, pk):
-    products = AnnuityProducts.objects.get(pk=pk)
-    options = products.annuity_option.all()
-    opt_serializer = AnnuityOptionsSerializer(options, many=True)
-    pro_serializer = AnnuityProductsSerializer(products)
-    data={
-        'product':pro_serializer.data,
-        'options':opt_serializer.data,
-    }
-    return Response(data)
+    if request.method == 'GET':
+        products = AnnuityProducts.objects.get(pk=pk)
+        options = products.annuity_option.all()
+        opt_serializer = AnnuityOptionsSerializer(options, many=True)
+        pro_serializer = AnnuityProductsSerializer(products)
+        data={
+            'product':pro_serializer.data,
+            'options':opt_serializer.data,
+        }
+        return Response(data)
 
+# 신용대출 상세조회
+@login_required
 @api_view(['GET'])
 def creditLoan_product_options(request, pk):
-    products = creditLoanProducts.objects.get(pk=pk)
-    options = products.creditLoan_option.all()
-    opt_serializer = creditLoanOptionsSerializer(options, many=True)
-    pro_serializer = creditLoanProductsSerializer(products)
-    data={
-        'product':pro_serializer.data,
-        'options':opt_serializer.data,
-    }
-    return Response(data)
+    if request.method == 'GET':
+        products = creditLoanProducts.objects.get(pk=pk)
+        options = products.creditLoan_option.all()
+        opt_serializer = creditLoanOptionsSerializer(options, many=True)
+        pro_serializer = creditLoanProductsSerializer(products)
+        data={
+            'product':pro_serializer.data,
+            'options':opt_serializer.data,
+        }
+        return Response(data)
 
 
 

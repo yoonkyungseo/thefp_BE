@@ -1,4 +1,5 @@
 from django.db import models
+from accounts.models import User
 
 # 예금, 적금 상품
 class DepositProducts(models.Model):
@@ -11,7 +12,7 @@ class DepositProducts(models.Model):
     join_member = models.TextField(blank=True, default="정보 없음")   # 가입대상
     join_way = models.TextField(blank=True, default="정보 없음")      # 가입방법
     spcl_cnd = models.TextField(blank=True, default="우대조건 없음")   # 우대조건
-    product_type = models.TextField()
+    product_type = models.TextField()                                 # 예금, 적금 
 
 class DepositOptions(models.Model):
     product = models.ForeignKey(DepositProducts, on_delete=models.CASCADE, related_name='deposit_option') 

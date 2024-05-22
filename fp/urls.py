@@ -13,6 +13,9 @@ urlpatterns = [
     path('annuity-product-options/<int:pk>/', views.annuity_product_options),
     path('creditloan-product-options/<int:pk>/', views.creditLoan_product_options),
 
+    # 상품 찜하기
+    path('deposit-like/<int:pk>/', views.like_deposit),
+
 
 
     path('deposit-products/top_rate/', views.top_rate),
