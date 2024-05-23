@@ -10,6 +10,7 @@ from .models import User
 from savedata.serializers import DepositProductsSerializer, DepositOptionsSerializer
 from .serializers import UserSerializer
 from django.http import JsonResponse
+from django.contrib.auth.hashers import make_password
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -43,7 +44,7 @@ def profile(request):
         user_serializer = UserSerializer(user, data=request.data, partial=True)
         if user_serializer.is_valid(raise_exception=True):
             user_serializer.save()
-            return Response(user_serializer.data, status=status.HTTP_205_RESET_CONTENT)
+            return Response(user_serializer.data)
 
 # 비밀번호 찾기
 @api_view(['POST','PUT'])
@@ -55,7 +56,11 @@ def reset_pw(request):
         return Response(user_serializer.data, status=status.HTTP_200_OK)
     # 비밀번호 변경
     if request.method == 'PUT':
-        user_serializer = UserSerializer(user, data=request.data, partial=True)
+        user = User.objects.get(email=request.data.get('email'))
+        data = {
+            'password':make_password(request.data['password'])
+        }
+        user_serializer = UserSerializer(user, data=data, partial=True)
         if user_serializer.is_valid(raise_exception=True):
             user_serializer.save()
             return Response({'message':"비밀번호 변경 완료"}, status=status.HTTP_200_OK)
@@ -89,7 +94,7 @@ def fake_user(request):
         creditcard = fake.pyint(min_value=0, max_value=5)
         save_user = {
             'username':email.split('@')[0],
-            'password':"test_password",
+            'password':make_password("test_password"),
             'nickname':nickname,
             'email':email,
             'birth':birth,
@@ -139,7 +144,7 @@ def fake_products(request):
         os.makedirs(os.path.dirname(file_path))
 
     # JSON 데이터를 파일로 저장
-    with open(file_path, 'w') as json_file:
+    with open(file_path, 'w', encoding="utf-8") as json_file:
         json_file.write(json_data)
         msg['json'] = 'Data has been exported to JSON file.'
 

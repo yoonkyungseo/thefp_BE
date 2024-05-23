@@ -45,7 +45,7 @@ def deposit_products(request):
             'fin_prdt_nm':fin_prdt_nm,
             'text': '가장 높은 최고우대금리를 가진 상품이에요📈',
             'tags':[pro_type, str(intr_rate2)+"%"],
-            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, ""),
+            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.cvg'),
         }
         recommend.append(highest_intr_rate2)
         
@@ -67,7 +67,7 @@ def deposit_products(request):
             'fin_prdt_nm':fin_prdt_nm,
             'text': '저축기간이 가장 짧아요! 🏃',
             'tags':[pro_type, str(save_trm)+"개월"],
-            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, ""),
+            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.cvg'),
         }
         recommend.append(lowest_save_trm)
 
@@ -77,14 +77,15 @@ def deposit_products(request):
             pro_serializer = DepositProductsSerializer(product)
             options = product.deposit_option.order_by('-intr_rate_type_nm','-intr_rate2')[0]
             opt_serializer = DepositOptionsSerializer(options)
+            kor_co_nm = pro_serializer.data.get('kor_co_nm')
             display = {
                 'id':pro_serializer.data.get('id'),
-                'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
+                'kor_co_nm':kor_co_nm,
                 'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
                 'intr_rate2':opt_serializer.data.get('intr_rate2'),
                 'save_trm':opt_serializer.data.get('save_trm'),
                 'product_type':pro_serializer.data.get('product_type'),
-                'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, ""),
+                'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.cvg'),
             }
             display_list.append(display)
         data = {

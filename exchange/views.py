@@ -1,4 +1,6 @@
-from django.shortcuts import render
+import os
+from django.core.serializers import serialize
+from django.conf import settings
 from rest_framework.decorators import api_view
 from django.conf import settings
 import requests
@@ -27,7 +29,7 @@ def save_exchange_rate(request):
     BASE_URL = 'https://www.koreaexim.go.kr/site/program/financial/exchangeJSON'
     params = {
         'authkey': EXCHANGE_API_KEY,
-        'searchdate':'20240522',
+        # 'searchdate':'20240522',
         'data':'AP01'  # AP01: 환율, AP02: 대출금리, AP03: 국제금리
     }
     response = requests.get(BASE_URL, params=params).json()
@@ -48,11 +50,23 @@ def save_exchange_rate(request):
             'deal_bas_r':deal_bas_r,
             'kftc_deal_bas_r':kftc_deal_bas_r,
         }
-        print(save_data)
         serializer = ExchangeRateSerializer(data=save_data)
         
         if serializer.is_valid(raise_exception=True):
-            print('=====================================================')
             serializer.save()
-    msg = {'message':'Exchange Rate data save Success'}
+    msg = {'data':'Exchange Rate data save Success'}
+
+    ex_rate = ExchangeRate.objects.all()
+    json_data = serialize('json', ex_rate)
+    file_path = os.path.join(settings.BASE_DIR, 'exchange/fixtures/exchange', 'exchange_rate.json')
+
+    #fixtures 디렉토리가 없는 경우 생성
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
+
+    # JSON 데이터를 파일로 저장
+    with open(file_path, 'w', encoding="utf-8") as json_file:
+        json_file.write(json_data)
+        msg['json'] = 'Data has been exported to JSON file.'
+
     return Response(msg, status=status.HTTP_200_OK)

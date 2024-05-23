@@ -1,3 +1,6 @@
+import os
+from django.core.serializers import serialize
+from django.conf import settings
 from rest_framework.decorators import api_view
 from django.conf import settings
 from django.http import JsonResponse
@@ -9,6 +12,7 @@ from .serializers import AnnuityOptionsSerializer, AnnuityProductsSerializer
 from .serializers import creditLoanOptionsSerializer, creditLoanProductsSerializer
 from .savemodel import save_DepositProducts, save_AnnuityProduct, save_LoanProduct, save_LoanOptions
 from .models import DepositProducts, AnnuityProducts, creditLoanProducts 
+from .models import DepositOptions, AnnuityOptions, creditLoanOptions
 from django.core.exceptions import ObjectDoesNotExist
 
 API_KEY = settings.API_KEY
@@ -108,6 +112,30 @@ def save_deposit_products(request):
                             "message":message
                         }
                         '''
+    dep_products = DepositProducts.objects.all()
+    json_data = serialize('json', dep_products)
+    file_path = os.path.join(settings.BASE_DIR, 'savedata/fixtures/savedata', 'deposit_products.json')
+
+    #fixtures 디렉토리가 없는 경우 생성
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
+
+    # JSON 데이터를 파일로 저장
+    with open(file_path, 'w', encoding="utf-8") as json_file:
+        json_file.write(json_data)
+
+    dep_options = DepositOptions.objects.all()
+    json_data = serialize('json', dep_options)
+    file_path = os.path.join(settings.BASE_DIR, 'savedata/fixtures/savedata', 'deposit_options.json')
+
+    #fixtures 디렉토리가 없는 경우 생성
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
+
+    # JSON 데이터를 파일로 저장
+    with open(file_path, 'w', encoding="utf-8") as json_file:
+        json_file.write(json_data)
+
     return Response(message, status=status.HTTP_201_CREATED)
 
         
@@ -211,6 +239,31 @@ def save_annuity_products(request):
                     pass
                 except ObjectDoesNotExist:
                     pass
+
+    ann_products = AnnuityProducts.objects.all()
+    json_data = serialize('json', ann_products)
+    file_path = os.path.join(settings.BASE_DIR, 'savedata/fixtures/savedata', 'annuity_products.json')
+
+    #fixtures 디렉토리가 없는 경우 생성
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
+
+    # JSON 데이터를 파일로 저장
+    with open(file_path, 'w', encoding="utf-8") as json_file:
+        json_file.write(json_data)
+
+    ann_options = AnnuityOptions.objects.all()
+    json_data = serialize('json', ann_options)
+    file_path = os.path.join(settings.BASE_DIR, 'savedata/fixtures/savedata', 'annuity_options.json')
+
+    #fixtures 디렉토리가 없는 경우 생성
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
+
+    # JSON 데이터를 파일로 저장
+    with open(file_path, 'w', encoding="utf-8") as json_file:
+        json_file.write(json_data)
+        
     return Response(message, status=status.HTTP_201_CREATED)
 
 
@@ -310,4 +363,29 @@ def save_creditloan_products(request):
                     pass
                 except ObjectDoesNotExist:
                     pass
+    
+    cre_products = creditLoanProducts.objects.all()
+    json_data = serialize('json', cre_products)
+    file_path = os.path.join(settings.BASE_DIR, 'savedata/fixtures/savedata', 'creditloan_products.json')
+
+    #fixtures 디렉토리가 없는 경우 생성
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
+
+    # JSON 데이터를 파일로 저장
+    with open(file_path, 'w', encoding="utf-8") as json_file:
+        json_file.write(json_data)
+
+    cre_options = creditLoanOptions.objects.all()
+    json_data = serialize('json', cre_options)
+    file_path = os.path.join(settings.BASE_DIR, 'savedata/fixtures/savedata', 'creditloan_options.json')
+
+    #fixtures 디렉토리가 없는 경우 생성
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
+
+    # JSON 데이터를 파일로 저장
+    with open(file_path, 'w', encoding="utf-8") as json_file:
+        json_file.write(json_data)
+        
     return Response(message, status=status.HTTP_201_CREATED)
