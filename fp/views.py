@@ -33,13 +33,17 @@ def deposit_products(request):
         opt_serializer = DepositOptionsSerializer(options)
         product = options.product
         pro_serializer = DepositProductsSerializer(product)
+
+        id = pro_serializer.data.get('id')
+        kor_co_nm = pro_serializer.data.get('kor_co_nm')
+        fin_prdt_nm = pro_serializer.data.get('fin_prdt_nm')
         pro_type = pro_serializer.data.get('product_type')
         intr_rate2 = opt_serializer.data.get('intr_rate2')
-        kor_co_nm = pro_serializer.data.get('kor_co_nm')
         highest_intr_rate2 = {
-            'kor_co_nm':kor_co_nm,
-            'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'text': '최고우대금리가 가장 높은 상품',
+            'id':id,
+            'kor_co_nm': kor_co_nm,
+            'fin_prdt_nm':fin_prdt_nm,
+            'text': '가장 높은 최고우대금리를 가진 상품이에요📈',
             'tags':[pro_type, str(intr_rate2)+"%"],
             'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, ""),
         }
@@ -50,13 +54,18 @@ def deposit_products(request):
         opt_serializer = DepositOptionsSerializer(options)
         product = options.product
         pro_serializer = DepositProductsSerializer(product)
+
+        id = pro_serializer.data.get('id')
+        kor_co_nm = pro_serializer.data.get('kor_co_nm')
+        fin_prdt_nm = pro_serializer.data.get('fin_prdt_nm')
         pro_type = pro_serializer.data.get('product_type')
         save_trm = opt_serializer.data.get('save_trm')
-        kor_co_nm = pro_serializer.data.get('kor_co_nm')
+
         lowest_save_trm = {
+            'id':id,
             'kor_co_nm':kor_co_nm,
-            'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
-            'text': '저축기간이 가장 짧은 상품',
+            'fin_prdt_nm':fin_prdt_nm,
+            'text': '저축기간이 가장 짧아요! 🏃',
             'tags':[pro_type, str(save_trm)+"개월"],
             'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, ""),
         }
@@ -68,9 +77,9 @@ def deposit_products(request):
             pro_serializer = DepositProductsSerializer(product)
             options = product.deposit_option.order_by('-intr_rate_type_nm','-intr_rate2')[0]
             opt_serializer = DepositOptionsSerializer(options)
-            kor_co_nm = pro_serializer.data.get('kor_co_nm')
             display = {
-                'kor_co_nm':kor_co_nm,
+                'id':pro_serializer.data.get('id'),
+                'kor_co_nm':pro_serializer.data.get('kor_co_nm'),
                 'fin_prdt_nm':pro_serializer.data.get('fin_prdt_nm'),
                 'intr_rate2':opt_serializer.data.get('intr_rate2'),
                 'save_trm':opt_serializer.data.get('save_trm'),

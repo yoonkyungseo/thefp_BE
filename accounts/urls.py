@@ -8,7 +8,7 @@ urlpatterns = [
     # 찜한 예/적금 상품 삭제
     path('delete_product/<int:product_pk>/', views.delete_product, name='delete_product'),
     # 비밀번호 재설정
-    path('reset_pw/<str:email>/', views.reset_pw, name='reset_pw'),
+    path('reset_pw/', views.reset_pw, name='reset_pw'),
 
     
     # fake data 생성

@@ -1,4 +1,6 @@
-from django.shortcuts import render
+import os
+from django.core.serializers import serialize
+from django.conf import settings
 from rest_framework.decorators import api_view, authentication_classes
 from rest_framework.authentication import TokenAuthentication
 from faker import Faker
@@ -44,11 +46,11 @@ def profile(request):
             return Response(user_serializer.data, status=status.HTTP_205_RESET_CONTENT)
 
 # 비밀번호 찾기
-@api_view(['GET','PUT'])
-def reset_pw(request, email):
+@api_view(['POST','PUT'])
+def reset_pw(request):
     # 이메일로 유저찾기
-    user = User.objects.get(email=email)
-    if request.method == 'GET':
+    if request.method == 'POST':
+        user = User.objects.get(email=request.POST['email'])
         user_serializer = UserSerializer(user)
         return Response(user_serializer.data, status=status.HTTP_200_OK)
     # 비밀번호 변경
@@ -126,4 +128,19 @@ def fake_products(request):
             user.creditloan.add(*selected_creditloans)
         
         user.save()
-    return Response({"message": "Products, annuities, and creditloans added successfully to all users."}, status=status.HTTP_201_CREATED)
+        msg = {"data": "Products, annuities, and creditloans added successfully to all users."}
+    
+    all_user = User.objects.all()
+    json_data = serialize('json', all_user)
+    file_path = os.path.join(settings.BASE_DIR, 'accounts/fixtures/accounts', 'fake_user.json')
+
+    #fixtures 디렉토리가 없는 경우 생성
+    if not os.path.exists(os.path.dirname(file_path)):
+        os.makedirs(os.path.dirname(file_path))
+
+    # JSON 데이터를 파일로 저장
+    with open(file_path, 'w') as json_file:
+        json_file.write(json_data)
+        msg['json'] = 'Data has been exported to JSON file.'
+
+    return Response(msg, status=status.HTTP_201_CREATED)

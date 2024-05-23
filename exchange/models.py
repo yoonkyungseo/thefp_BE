@@ -7,4 +7,4 @@ class ExchangeRate(models.Model):
     ttb = models.TextField()                       # 전신환(송금) 받으실때
     tts = models.TextField()                     # 전신환(송금) 보내실때
     deal_bas_r = models.TextField()      # 매매 기준율
-    kftc_deal_bas_r = models.IntegerField()           # 서울외국환중개 매매기준율
+    kftc_deal_bas_r = models.TextField()           # 서울외국환중개 매매기준율

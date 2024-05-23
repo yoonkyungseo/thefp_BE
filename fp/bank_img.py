@@ -1,4 +1,4 @@
-BASE_URL = '/src/assets/icons/banks/'
+BASE_URL = '/assets/icons/banks/'
 BANK_IMAGE_URL_DICT = {
 '씨티은행' : BASE_URL+'citi-logo.svg',
 '대구은행' : BASE_URL+'daegoo-logo.svg',
