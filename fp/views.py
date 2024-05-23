@@ -9,6 +9,18 @@ from accounts.serializers import DepositCommentSerializer, UserSerializer
 from savedata.models import creditLoanOptions, creditLoanProducts
 from .bank_img import BANK_IMAGE_URL_DICT
 from rest_framework.authentication import TokenAuthentication
+import random
+import pandas as pd
+import joblib
+import os
+import json
+from datetime import datetime
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, classification_report
+
+from sklearn.model_selection import train_test_split
 
 from django.db.models import Q
 from django.utils import timezone
@@ -379,10 +391,118 @@ def creditLoan_product_options(request, pk):
 
 ######################### 추천 상품 ################################
 @authentication_classes([TokenAuthentication])
-@api_view(['POST', 'GET'])
+@api_view(['POST'])
 def recommend_product(request):
     if request.method == 'POST':
-        user = User.objects.get(user = request.data.user)
-        user_serializer = UserSerializer(user, data=request.data, partial=True)
-        if user_serializer.is_valid(raise_exception=True):
-                user_serializer.save()
+        user = User.objects.get(username=request.user)
+        # user_serializer = UserSerializer(user, data=request.data, partial=True)
+        # if user_serializer.is_valid(raise_exception=True):
+        #         user_serializer.save()
+        user_serializer = UserSerializer(user)
+        df_data = {
+            'birth': [],
+            'gender': [],
+            'crdt_grad': [],
+            'salary': [],
+            'm_consumption':[],
+            'asset':[],
+            'real_estate':[],
+            'invest_tendency':[],
+            'pro_cnt':[],   # 보유하고 있는 예적금 상품 수 1~5 (5 이상 입력하면 5로 변경)
+            
+            'join_deny': [],
+            'join_member': [],
+            'join_way': [],   # 스마트폰, 영업점, 인터넷, 전화(텔레뱅킹), 기타, 모집인
+            'join_way_cnt': [],
+            'type': [],       # 예금, 적금
+            'intr_rate_type_nm': [],  # 단리, 복리
+            'intr_rate': [],
+            'intr_rate2': [],
+            'save_trm': [],
+            'rsrv_type': []
+        }
+        birth = user_serializer.data.get('birth')
+        gender = request.data.get('gender')
+        crdt_grad = request.data.get('crdt_grad')
+        salary = request.data.get('salary')
+        m_consumption = request.data.get('m_consumption')
+        asset = request.data.get('asset')
+        real_estate = request.data.get('real_estate')
+        invest_tendency = request.data.get('invest_tendency')
+        pro_cnt = request.data.get('pro_cnt')
+        join_deny = random.choice([1, 3])
+        join_member = "제한없음"
+        join_way_cnt = len(request.data.get('join_way'))
+        intr_rate = request.data.get('intr_rate')
+        intr_rate2 = request.data.get('intr_rate')
+        save_trm = request.data.get('save_trm')
+        for join_way in request.data.get('join_way'):
+            for type in request.data.get('type'):
+                for intr_rate_type_nm in request.data.get('intr_rate_type_nm'):
+                    df_data['birth'].append(birth)
+                    df_data['gender'].append(gender)
+                    df_data['crdt_grad'].append(crdt_grad)
+                    df_data['salary'].append(salary)
+                    df_data['m_consumption'].append(m_consumption)
+                    df_data['asset'].append(asset)
+                    df_data['real_estate'].append(real_estate)
+                    df_data['invest_tendency'].append(invest_tendency)
+                    df_data['pro_cnt'].append(pro_cnt)
+                    df_data['join_deny'].append(join_deny)
+
+                    df_data['join_member'].append(join_member)
+                    df_data['join_way_cnt'].append(join_way_cnt)
+                    df_data['intr_rate'].append(intr_rate)
+                    df_data['intr_rate2'].append(intr_rate2)
+                    df_data['save_trm'].append(save_trm)
+                    df_data['join_way'].append(join_way)
+                    df_data['type'].append(type)
+                    df_data['intr_rate_type_nm'].append(intr_rate_type_nm)
+                    if type == "예금":
+                        df_data['rsrv_type'].append(random.choice(["N", "F", "S"]))
+                    else:
+                        df_data['rsrv_type'].append(random.choice(["F", "S"]))
+        df = pd.DataFrame(df_data)
+        print(df_data)
+        # 나이
+        df['age'] = df['birth'].apply(lambda x: datetime.now().year-int(x.split('-')[0])+1)
+        # join_way의 갯수가 많은 순대로 가중치
+        df['hot_join'] = df['join_way'].apply(lambda x: 7 if x == "스마트폰"
+                                        else 6 if x == "영업점"
+                                        else 5 if x =="인터넷"
+                                        else 4 if x == "전화(텔레뱅킹)"
+                                        else 3 if x == "기타"
+                                        else 2 if x == "모집인"
+                                        else 1)
+        # 평균
+        pro_df = df.groupby('birth')[['crdt_grad','salary','m_consumption','asset','intr_rate','intr_rate2','save_trm']].mean().reset_index()
+        pro_df.rename(columns=lambda x: f"{x}_avg" if x != "birth" else x, inplace=True)
+        df = df.merge(pro_df)
+        # 소비 상황
+        df.loc[df['salary'] < df['m_consumption']*12, "consumption"] = "과소비"
+        df.loc[df['salary'] == df['m_consumption']*12, "consumption"] = "위험"
+        df.loc[df['salary'] > df['m_consumption']*12, "consumption"] = "적정"
+
+
+        ### 모델링
+        df['birth'] = df['birth'].astype('str')
+        df['gender'] = df['gender'].astype('category')
+        df['real_estate'] = df['real_estate'].astype('category')
+        df['invest_tendency'] = df['invest_tendency'].astype('category')
+
+        # 범주형 변수와 수치형 변수를 분리
+        cat_df = df.select_dtypes(include=['object','category']).columns.to_list()
+        num_df = df.select_dtypes(exclude=['object','category']).columns.to_list()
+        # 범주형 변수에 One-Hot-Encoding 후 수치형 변수와 병합
+        if len(cat_df) > 0:
+            df = pd.concat([df[num_df], pd.get_dummies(df[cat_df])], axis=1)
+        else:
+            df = df[num_df]
+
+        model = joblib.load('recommend_model.pkl')
+        scaler = joblib.load('scaler.pkl')
+
+        scaler = StandardScaler()
+        df = scaler.transform(df)
+        predictions = model.predict(df)
+        print(predictions)
