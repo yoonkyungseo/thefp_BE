@@ -45,7 +45,7 @@ def deposit_products(request):
             'fin_prdt_nm':fin_prdt_nm,
             'text': '가장 높은 최고우대금리를 가진 상품이에요📈',
             'tags':[pro_type, str(intr_rate2)+"%"],
-            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.cvg'),
+            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.svg'),
         }
         recommend.append(highest_intr_rate2)
         
@@ -67,9 +67,43 @@ def deposit_products(request):
             'fin_prdt_nm':fin_prdt_nm,
             'text': '저축기간이 가장 짧아요! 🏃',
             'tags':[pro_type, str(save_trm)+"개월"],
-            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.cvg'),
+            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.svg'),
         }
         recommend.append(lowest_save_trm)
+
+        # 상단 추천상품 3 - 가장 많은 사람들이 찾은 상품
+        user = User.objects.all()
+        user_serializer = UserSerializer(user, many=True)
+        pro_list = []
+        for product in user_serializer.data:
+            pro_list.extend(product.get('product'))
+        number = max(pro_list)
+
+        product = DepositProducts.objects.get(pk=number)
+        pro_serializer = DepositProductsSerializer(product)
+        options = product.deposit_option.order_by('-intr_rate_type_nm','-intr_rate2')[0]
+        opt_serializer = DepositOptionsSerializer(options)
+
+        id = pro_serializer.data.get('id')
+        kor_co_nm = pro_serializer.data.get('kor_co_nm')
+        fin_prdt_nm = pro_serializer.data.get('fin_prdt_nm')
+        pro_type = pro_serializer.data.get('product_type')
+        intr_rate2 = opt_serializer.data.get('intr_rate2')
+
+        many_people_like = {
+            'id':id,
+            'kor_co_nm':kor_co_nm,
+            'fin_prdt_nm':fin_prdt_nm,
+            'text': "가장 많은 사람들이 찾았어요! 🥳",
+            'tags':[pro_type, str(intr_rate2)+"%"],
+            'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.svg'),
+        }
+        recommend.append(many_people_like)
+
+        user_data = {
+            'user': pro_list
+        }
+        recommend.append(user_data)
 
         # 전체 상품 조회
         display_list = []
@@ -85,7 +119,7 @@ def deposit_products(request):
                 'intr_rate2':opt_serializer.data.get('intr_rate2'),
                 'save_trm':opt_serializer.data.get('save_trm'),
                 'product_type':pro_serializer.data.get('product_type'),
-                'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.cvg'),
+                'imgUrl': BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.svg'),
             }
             display_list.append(display)
         data = {
@@ -277,12 +311,24 @@ def deposit_product_options(request, pk):
         options = products.deposit_option.all()
         opt_serializer = DepositOptionsSerializer(options, many=True)
         pro_serializer = DepositProductsSerializer(products)
-        comment = products.product_set.all()
-        com_serializer = DepositCommentSerializer(comment, many=True)
+        kor_co_nm = pro_serializer.data.get('kor_co_nm')
+        pro = pro_serializer.data
+        pro['imgUrl'] = BANK_IMAGE_URL_DICT.get(kor_co_nm, '/assets/icons/banks/default-logo.svg')
+        comment_list = []
+        for comment in products.product_set.all():
+            com_serializer = DepositCommentSerializer(comment)
+            user_serializer = UserSerializer(comment.user)
+            comment_data = {
+                "nickname": user_serializer.data.get("nickname"),
+                "id": com_serializer.data.get('id'),
+                "content": com_serializer.data.get("content"),
+                "created_at": com_serializer.data.get('created_at'),
+            }
+            comment_list.append(comment_data)
         data={
-            'product':pro_serializer.data,
+            'product':pro,
             'options':opt_serializer.data,
-            'comment':com_serializer.data
+            'comment':comment_list
         }
         return Response(data, status=status.HTTP_200_OK)
     # 상품 댓글 달기
@@ -292,16 +338,16 @@ def deposit_product_options(request, pk):
             serializer.save(user = request.user, product = products)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-# 예금 적금 상품 찜하기
+####################### 예금 적금 상품 찜하기 ##############################
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 def like_deposit(request, product_pk):
     if request.user.is_authenticated:
         product = get_object_or_404(DepositProducts, pk=product_pk)
-        if product.like_user.filter(pk=product_pk).exists():
-            product.like_user.remove(request.user)
+        if request.user in product.like_product.all():
+            product.like_product.remove(request.user)
         else:
-            product.like_user.add(request.user)
+            product.like_product.add(request.user)
         return Response(status.HTTP_200_OK)
 
 

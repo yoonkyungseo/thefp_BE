@@ -24,7 +24,7 @@ class DepositCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Deposit_Comment
         fields = '__all__'
-        read_only_fields = ['user','product',]
+        read_only_fields = ['user','product','created_at']
 
 
 class UserSerializer(serializers.ModelSerializer):
