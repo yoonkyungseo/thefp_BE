@@ -100,11 +100,6 @@ def deposit_products(request):
         }
         recommend.append(many_people_like)
 
-        user_data = {
-            'user': pro_list
-        }
-        recommend.append(user_data)
-
         # 전체 상품 조회
         display_list = []
         for product in DepositProducts.objects.all():
@@ -384,9 +379,10 @@ def creditLoan_product_options(request, pk):
 
 ######################### 추천 상품 ################################
 @authentication_classes([TokenAuthentication])
-@api_view(['POST'])
+@api_view(['POST', 'GET'])
 def recommend_product(request):
-    user = User.objects.get(user = request.data.user)
-    user_serializer = UserSerializer(user, data=request.data, partial=True)
-    if user_serializer.is_valid(raise_exception=True):
-            user_serializer.save()
+    if request.method == 'POST':
+        user = User.objects.get(user = request.data.user)
+        user_serializer = UserSerializer(user, data=request.data, partial=True)
+        if user_serializer.is_valid(raise_exception=True):
+                user_serializer.save()
